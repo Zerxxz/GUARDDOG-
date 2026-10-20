@@ -10,16 +10,20 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk = "=5.29.1"
-sha3 = { version = "0.10", default-features = false }
-hex = "0.4"
-
-# no-std flavor for the on-chain (wasm) build — matches near/mpc usage
+borsh = "1"
+schemars = "0.8"
+# Recovery is implemented directly on k256 arithmetic (near/mpc check_ec_signature
+# math) so the `ecdsa` feature is not needed. no-std + critical-section keeps
+# rand_core's getrandom (which cannot compile on wasm32-unknown-unknown) out of
+# the wasm build; the std flavor below is only used for native unit tests.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-k256 = { version = "0.13", default-features = false, features = ["ecdsa", "alloc", "precomputed-tables"] }
+k256 = { version = "0.13", default-features = false, features = ["arithmetic", "critical-section"] }
+sha3 = { version = "0.10", default-features = false }
 
-# std flavor for native unit tests (k256 precomputed-tables needs once_cell/std here)
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-k256 = { version = "0.13", default-features = false, features = ["ecdsa", "alloc", "std", "precomputed-tables"] }
+k256 = { version = "0.13", default-features = false, features = ["arithmetic", "precomputed-tables", "std"] }
+sha3 = "0.10"
+hex = "0.4"
 
 [dev-dependencies]
 # unit-testing feature drives the near-sdk VM mock used by #[cfg(test)]

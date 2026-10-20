@@ -14,18 +14,19 @@
  * verdict / stats with MPC-anchored access control + owner fallback publish.
  */
 
-use k256::elliptic_curve::bigint::U256;
 use k256::elliptic_curve::ops::Reduce;
+use k256::elliptic_curve::point::AffineCoordinates;
 use k256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
-use k256::elliptic_curve::{AffinePoint, CurveArithmetic, PrimeField};
-use k256::{EncodedPoint, ProjectivePoint, Scalar, Secp256k1};
+use k256::elliptic_curve::{CurveArithmetic, PrimeField};
+use k256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar, Secp256k1};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
 use near_sdk::json_types::U64;
-use near_sdk::{
-    env, near_bindgen, require, AccountId, BorshStorageKey, PanicOnDefault, PublicKey,
-};
 use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::store::{LookupMap, Vector};
+use near_sdk::{
+    env, near, near_bindgen, require, AccountId, BorshStorageKey, NearSchema, PanicOnDefault,
+    PublicKey,
+};
 use sha3::{Digest, Sha3_256};
 
 /// Public key of the MPC network (v1.signer-prod.testnet).
@@ -45,8 +46,9 @@ enum StorageKey {
 }
 
 /// Threat verdict published by Sentinel (blueprint 4.2).
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(NearSchema, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
 pub struct Verdict {
     pub id: String,
     pub chain: String,
@@ -61,8 +63,9 @@ pub struct Verdict {
 
 /// MPC signature proof attached to a verdict (Chain Signatures shape:
 /// big_r / s / recovery_id — near/mpc crypto_shared::types::SignatureResponse).
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
+#[derive(NearSchema, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
 pub struct SignatureProof {
     /// Hex (0x-optional) 32-byte hash the MPC network signed; must equal
     /// sha256 of the canonical verdict payload (recomputed on-chain).
@@ -77,8 +80,9 @@ pub struct SignatureProof {
     pub derivation_path: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(NearSchema, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
 pub struct Stats {
     /// distinct (chain, attacker) verdicts stored
     pub total: U64,
@@ -87,8 +91,9 @@ pub struct Stats {
     pub last_publish: Option<U64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(NearSchema, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
 pub struct PublishResult {
     pub accepted: bool,
     /// false when an equal-or-higher-confidence verdict already existed
@@ -97,9 +102,9 @@ pub struct PublishResult {
     pub mpc_signature_valid: bool,
 }
 
-#[PanicOnDefault]
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(PanicOnDefault)]
+// generates Borsh ser/de + ContractState glue for the wasm runtime
+#[near(contract_state)]
 pub struct Registry {
     owner: AccountId,
     self_id: AccountId,
@@ -107,7 +112,7 @@ pub struct Registry {
     mpc_public_key: PublicKey,
     mpc_public_key_str: String,
     /// "chain:attacker" -> latest verdict
-    verdicts: UnorderedMap<String, Verdict>,
+    verdicts: LookupMap<String, Verdict>,
     /// append-only publish log
     history: Vector<Verdict>,
     /// verdict id -> "chain:attacker"
@@ -138,7 +143,7 @@ impl Registry {
             self_id: env::current_account_id(),
             mpc_public_key: pk,
             mpc_public_key_str: pk_str,
-            verdicts: UnorderedMap::new(StorageKey::Verdicts),
+            verdicts: LookupMap::new(StorageKey::Verdicts),
             history: Vector::new(StorageKey::History),
             by_id: LookupMap::new(StorageKey::ById),
             total: 0,
@@ -155,19 +160,34 @@ impl Registry {
     ///    Signatures algorithm, and requires the recovered signer to equal
     ///    it. Key-level verification (stronger than an EVM address compare,
     ///    which is just the truncated keccak of this same key).
-    /// 2. **Owner fallback (demo path)** — contract owner may publish without
-    ///    an MPC proof. Blueprint risk-table mitigation for T5 while the
-    ///    Sentinel MPC signing pipeline is wired up.
+    /// 2. **Owner fallback (demo path)** — the contract owner may publish
+    ///    without an MPC proof, but only via a *direct* owner transaction
+    ///    (signer == predecessor == owner). A cross-contract self-call
+    ///    (predecessor == this contract) is only tolerated when the outermost
+    ///    signer is the owner; a stray promise loop from any other signer is
+    ///    rejected. Blueprint risk-table mitigation for T5 while the Sentinel
+    ///    MPC signing pipeline is wired up.
     pub fn publish_verdict(
         &mut self,
         verdict: Verdict,
         signature: Option<SignatureProof>,
     ) -> PublishResult {
         let predecessor = env::predecessor_account_id();
-        require!(
-            predecessor != self.self_id,
-            "publish_verdict: cannot be called by the registry itself"
-        );
+        let signer = env::signer_account_id();
+
+        if predecessor == self.self_id {
+            // Self cross-contract call: only a direct owner-initiated one may
+            // pass, and only on the owner-fallback path (never with a proof,
+            // which must bind the publishing account, not the registry).
+            require!(
+                signature.is_none(),
+                "publish_verdict: self-call must not carry a signature"
+            );
+            require!(
+                signer == self.owner,
+                "publish_verdict: cross-contract self-call is not owner-initiated"
+            );
+        }
 
         let mut mpc_ok = false;
         match &signature {
@@ -177,9 +197,10 @@ impl Registry {
             }
             None => {
                 require!(
-                    predecessor == self.owner,
+                    signer == self.owner && predecessor == self.owner,
                     "publish_verdict: caller is not authorized (MPC-signed verdicts \
-                     require a valid SignatureProof; unsigned publishes are owner-only)"
+                     require a valid SignatureProof; unsigned publishes are owner-only \
+                     and must be direct owner transactions)"
                 );
             }
         }
@@ -188,16 +209,17 @@ impl Registry {
         let key = verdict_key(&verdict.chain, &verdict.attacker);
 
         // Upsert: keep the highest-confidence verdict per (chain, attacker).
-        let existing = self.verdicts.get(&key);
-        let updated = match &existing {
-            Some(prev) => verdict.confidence > prev.confidence,
+        let prev_confidence = self.verdicts.get(&key).map(|v| v.confidence);
+        let updated = match prev_confidence {
+            Some(prev) => verdict.confidence > prev,
             None => true,
         };
         if updated {
-            self.verdicts.insert(&key, &verdict);
-            self.history.push(&verdict);
-            self.by_id.insert(&verdict.id, &key);
-            if existing.is_none() {
+            let was_new = prev_confidence.is_none();
+            let _ = self.verdicts.insert(key.clone(), verdict.clone());
+            self.history.push(verdict.clone());
+            let _ = self.by_id.insert(verdict.id.clone(), key);
+            if was_new {
                 self.total += 1;
             }
             self.last_publish = Some(verdict.timestamp);
@@ -213,31 +235,33 @@ impl Registry {
 
     /// Latest verdict for a (chain, attacker) pair.
     pub fn verdict_for(&self, chain: String, addr: String) -> Option<Verdict> {
-        self.verdicts.get(&verdict_key(&chain, &addr))
+        self.verdicts.get(&verdict_key(&chain, &addr)).cloned()
     }
 
     /// Verdict by its `id` (blueprint 4.2).
     pub fn verdict(&self, id: String) -> Option<Verdict> {
-        self.by_id.get(&id).and_then(|key| self.verdicts.get(&key))
+        self.by_id.get(&id).and_then(|key| self.verdicts.get(key)).cloned()
     }
 
     /// Latest verdicts, newest first (bounded).
     pub fn latest(&self, limit: u32) -> Vec<Verdict> {
         let n = self.history.len();
-        let limit = (limit as u64).min(n) as u64;
+        let limit = limit.min(n);
         let mut out = Vec::new();
         for i in 0..limit {
             if let Some(v) = self.history.get(n - 1 - i) {
-                out.push(v);
+                out.push(v.clone());
             }
         }
         out
     }
 
     pub fn stats(&self) -> Stats {
+        // every distinct (chain, attacker) verdict blocks that address,
+        // so blocked == total in this design
         Stats {
             total: U64(self.total),
-            blocked: U64(self.verdicts.len()),
+            blocked: U64(self.total),
             last_publish: self.last_publish,
         }
     }
@@ -294,7 +318,7 @@ fn derive_epsilon(predecessor: &AccountId, path: &str) -> Scalar {
     // failure would need ~2^127 attempts. mpc_old panics there; we fall back
     // to ZERO, which can only produce a mismatch panic later — never a
     // false accept.
-    Scalar::from_repr(U256::from_be_bytes(hash)).unwrap_or(Scalar::ZERO)
+    Scalar::from_repr(hash.into()).into_option().unwrap_or(Scalar::ZERO)
 }
 
 /// near/mpc crypto_shared::kdf::derive_key — P_mpc + epsilon*G.
@@ -309,7 +333,7 @@ fn near_pk_to_affine(pk: &PublicKey) -> AffinePoint {
     require!(bytes.len() == 65, "unexpected public key encoding");
     bytes[0] = 0x04;
     let point = EncodedPoint::from_bytes(bytes).expect("invalid sec1 point");
-    AffinePoint::from_encoded_point(&point).expect("point not on curve")
+    AffinePoint::from_encoded_point(&point).into_option().expect("point not on curve")
 }
 
 fn parse_hex32(input: &str, what: &str) -> Result<[u8; 32], String> {
@@ -363,14 +387,17 @@ fn verify_mpc_signature(
     verdict: &Verdict,
 ) {
     // 1. payload binding
-    let z = env::sha256(payload_bytes(verdict));
+    let z_bytes = env::sha256(payload_bytes(verdict));
     let got = match parse_hex32(&proof.payload_hash, "payload_hash") {
         Ok(v) => v,
         Err(e) => env::panic_str(&format!("publish_verdict: {}", e)),
     };
-    if got != z.as_slice() {
+    if got != z_bytes.as_slice() {
         env::panic_str("publish_verdict: payload_hash does not match the verdict payload");
     }
+    let mut z32 = [0u8; 32];
+    z32.copy_from_slice(&z_bytes);
+    let z_scalar = Scalar::from_repr(z32.into()).into_option().unwrap_or(Scalar::ZERO);
 
     // 2. derived public key for (predecessor, path)
     let epsilon = derive_epsilon(predecessor, &proof.derivation_path);
@@ -382,7 +409,7 @@ fn verify_mpc_signature(
         Ok(p) => p,
         Err(_) => env::panic_str("publish_verdict: big_r is not a valid SEC1 point"),
     };
-    let big_r_affine = match AffinePoint::from_encoded_point(&big_r) {
+    let big_r_affine = match AffinePoint::from_encoded_point(&big_r).into_option() {
         Some(p) => p,
         None => env::panic_str("publish_verdict: big_r not on curve"),
     };
@@ -390,13 +417,13 @@ fn verify_mpc_signature(
         Ok(v) => v,
         Err(e) => env::panic_str(&format!("publish_verdict: {}", e)),
     };
-    let s_scalar = match Scalar::from_repr(U256::from_be_bytes(s_bytes)).into_option() {
+    let s_scalar = match Scalar::from_repr(s_bytes.into()).into_option() {
         Some(s) if s != Scalar::ZERO => s,
         _ => env::panic_str("publish_verdict: s is not a valid scalar"),
     };
     require!(proof.recovery_id <= 1, "publish_verdict: recovery_id must be 0 or 1");
 
-    let recovered = recover_signer(&z, x_coordinate(&big_r_affine), s_scalar, proof.recovery_id);
+    let recovered = recover_signer(&z_scalar, x_coordinate(&big_r_affine), s_scalar, &big_r_affine);
     if recovered != expected_key {
         env::panic_str(&format!(
             "publish_verdict: MPC signature does not match the derived address of \
@@ -412,21 +439,15 @@ fn x_coordinate(p: &AffinePoint) -> Scalar {
     >>::reduce_bytes(&p.x())
 }
 
-/// ECDSA public-key recovery from (z, r, s, recovery_id). Works natively and
-/// on wasm with the same code path (k256), so unit tests and on-chain
-/// execution behave identically.
-fn recover_signer(z: &[u8], r: Scalar, s: Scalar, recovery_id: u8) -> AffinePoint {
-    use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
-
-    let signature = match Signature::from_scalars(r, s) {
-        Ok(sig) => sig,
-        Err(_) => env::panic_str("publish_verdict: cannot build signature from MPC response"),
-    };
-    let rid = RecoveryId::new(recovery_id == 1, false);
-    match VerifyingKey::recover_from_prehash(&z[..32], &signature, rid) {
-        Ok(vk) => *vk.as_affine(),
-        Err(_) => env::panic_str("publish_verdict: signature recovery failed"),
-    }
+/// ECDSA public-key recovery from (z, r, s, R) — the exact math of
+/// near/mpc crypto_shared::kdf::check_ec_signature (recover the signer and
+/// compare against the expected key). Deliberately NO low-s gate: MPC nodes
+/// may return high-s signatures, and near/mpc accepts them.
+fn recover_signer(z: &Scalar, r: Scalar, s: Scalar, big_r: &AffinePoint) -> AffinePoint {
+    let r_inv = r.invert().expect("r is never zero (x-coordinate of a curve point)");
+    let u1 = -r_inv * *z;
+    let u2 = r_inv * s;
+    (ProjectivePoint::GENERATOR * u1 + ProjectivePoint::from(*big_r) * u2).to_affine()
 }
 
 // ------------------------------------------------------------------- tests --
@@ -434,9 +455,9 @@ fn recover_signer(z: &[u8], r: Scalar, s: Scalar, recovery_id: u8) -> AffinePoin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use k256::elliptic_curve::{AffineCoordinates, Field};
-    use near_sdk::test_utils::{VMContext, VMContextBuilder};
-    use near_sdk::testing_env;
+    use k256::elliptic_curve::point::AffineCoordinates;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, VMContext};
 
     fn verdict_fixture(id: &str, chain: &str, attacker: &str, confidence: u8) -> Verdict {
         Verdict {
@@ -498,9 +519,37 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "cannot be called by the registry itself")]
+    #[should_panic(expected = "cross-contract self-call is not owner-initiated")]
     fn self_publish_rejected() {
+        // stray promise loop: predecessor == registry, signer is someone else
+        testing_env!(VMContextBuilder::new()
+            .current_account_id(REGISTRY.parse().unwrap())
+            .signer_account_id("mallory.testnet".parse().unwrap())
+            .predecessor_account_id(REGISTRY.parse().unwrap())
+            .build());
+        let mut c = Registry::new(None);
+        let _ = c.publish_verdict(verdict_fixture("v", "base-sepolia", "0xA", 10), None);
+    }
+
+    #[test]
+    fn owner_direct_publish_ok_even_with_self_predecessor() {
+        // direct owner transaction on the contract account itself:
+        // signer == predecessor == owner == registry
         testing_env!(ctx(REGISTRY, REGISTRY));
+        let mut c = Registry::new(None);
+        let res = c.publish_verdict(verdict_fixture("v", "base-sepolia", "0xA", 10), None);
+        assert!(res.accepted);
+    }
+
+    #[test]
+    #[should_panic(expected = "must be direct owner transactions")]
+    fn indirect_owner_call_rejected() {
+        // predecessor == owner but signer is someone else (promise chain)
+        testing_env!(VMContextBuilder::new()
+            .current_account_id(REGISTRY.parse().unwrap())
+            .signer_account_id("mallory.testnet".parse().unwrap())
+            .predecessor_account_id("alice.testnet".parse().unwrap())
+            .build());
         let mut c = Registry::new(None);
         let _ = c.publish_verdict(verdict_fixture("v", "base-sepolia", "0xA", 10), None);
     }
@@ -530,24 +579,18 @@ mod tests {
     fn confidence_above_100_rejected() {
         testing_env!(ctx(REGISTRY, "alice.testnet"));
         let mut c = Registry::new(None);
-        let mut v = verdict_fixture("vb", "base-sepolia", "0xB", 101);
-        v.confidence = 101;
-        let _ = c.publish_verdict(v, None);
+        let _ = c.publish_verdict(verdict_fixture("vb", "base-sepolia", "0xB", 101), None);
     }
 
     #[test]
     fn confidence_100_accepted() {
         testing_env!(ctx(REGISTRY, "alice.testnet"));
         let mut c = Registry::new(None);
-        let mut v = verdict_fixture("vb", "base-sepolia", "0xB", 100);
-        v.confidence = 100;
-        let res = c.publish_verdict(v, None);
+        let res = c.publish_verdict(verdict_fixture("vb", "base-sepolia", "0xB", 100), None);
         assert!(res.accepted);
     }
 
     // ---- MPC-anchored publish path ----
-
-    use k256::elliptic_curve::PrimeField as _;
 
     /// Base setup shared by MPC tests: registry MPC key is `D - eps*G` so the
     /// derived key for (signer, path) equals `D = d*G`; craft an MPC-style
@@ -564,8 +607,10 @@ mod tests {
         let k = Scalar::from(nonce);
         let big_r_affine = (ProjectivePoint::GENERATOR * k).to_affine();
         let eps = derive_epsilon(&signer.parse().unwrap(), path);
+        // P_mpc = D - eps*G with D = d*G, so the registry's derived key for
+        // (signer, path) is exactly D — the key the signature below recovers.
         let p_mpc =
-            (ProjectivePoint::from(big_r_affine * d) - ProjectivePoint::GENERATOR * eps).to_affine();
+            (ProjectivePoint::GENERATOR * d - ProjectivePoint::GENERATOR * eps).to_affine();
         let p_mpc_near = affine_to_near_str(&p_mpc);
 
         let mut verdict = verdict_fixture("vmpc", "base-sepolia", "0xBADC0DE", 99);
@@ -575,7 +620,7 @@ mod tests {
         let registry = Registry::new(Some(p_mpc_near));
         let z = registry.expected_payload(verdict.clone());
         let z_bytes = parse_hex32(&z, "z").unwrap();
-        let z_scalar = Scalar::from_repr(U256::from_be_bytes(z_bytes)).unwrap();
+        let z_scalar = Scalar::from_repr(z_bytes.into()).into_option().unwrap();
         let r = x_coordinate(&big_r_affine);
         let s = k.invert().unwrap() * (z_scalar + r * d);
         let proof = SignatureProof {
@@ -632,9 +677,14 @@ mod tests {
         assert!(res.accepted && res.mpc_signature_valid);
         assert!(registry.is_blocked("base-sepolia".into(), "0xBADC0DE".into()));
         assert_eq!(registry.stats().total.0, 1);
-        // the derived key must be exactly D = 42*G
+        // semantic check: derived key for (signer, path) is exactly D = 42*G,
+        // i.e. P_mpc(stored) + eps*G == 42*G
+        let eps = derive_epsilon(&"sentinel.testnet".parse().unwrap(), "guarddog-v1");
+        let stored = registry.mpc_public_key();
+        let p_mpc = near_pk_to_affine(&stored.parse().unwrap());
+        let derived = (ProjectivePoint::from(p_mpc) + ProjectivePoint::GENERATOR * eps).to_affine();
         let expected = (ProjectivePoint::GENERATOR * Scalar::from(42u64)).to_affine();
-        assert_eq!(registry.mpc_public_key(), affine_to_near_str(&expected));
+        assert_eq!(derived, expected);
     }
 
     #[test]
