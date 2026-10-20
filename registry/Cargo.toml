@@ -1,0 +1,34 @@
+[package]
+name = "guarddog-registry"
+version = "0.1.0"
+edition = "2021"
+description = "GUARDDOG Sentinel Registry — on-chain threat-intel verdicts anchored by NEAR Chain Signatures (MPC)"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "=5.29.1"
+sha3 = { version = "0.10", default-features = false }
+hex = "0.4"
+
+# no-std flavor for the on-chain (wasm) build — matches near/mpc usage
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+k256 = { version = "0.13", default-features = false, features = ["ecdsa", "alloc", "precomputed-tables"] }
+
+# std flavor for native unit tests (k256 precomputed-tables needs once_cell/std here)
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+k256 = { version = "0.13", default-features = false, features = ["ecdsa", "alloc", "std", "precomputed-tables"] }
+
+[dev-dependencies]
+# unit-testing feature drives the near-sdk VM mock used by #[cfg(test)]
+near-sdk = { version = "=5.29.1", features = ["unit-testing"] }
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true

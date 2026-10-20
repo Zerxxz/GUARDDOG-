@@ -38,9 +38,10 @@ def new_decoy(label: str) -> Decoy:
     return Decoy(address=acct.address, keyfile=kf, label=label)
 
 
-def save_state(decoys: list[Decoy], extra: dict | None = None) -> None:
+def save_state(decoys: list, extra: dict | None = None) -> None:
     os.makedirs(STATE_DIR, exist_ok=True)
-    payload = {"decoys": [asdict(d) for d in decoys], **(extra or {})}
+    rows = [d if isinstance(d, dict) else asdict(d) for d in decoys]
+    payload = {"decoys": rows, **(extra or {})}
     with open(STATE_FILE, "w") as f:
         json.dump(payload, f, indent=2)
     os.chmod(STATE_FILE, 0o600)
