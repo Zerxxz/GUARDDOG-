@@ -44,7 +44,7 @@ def _scan_token_logs(w3: Web3, state, last_block: int, decoys: set[str], token: 
         return 0, last_block
     approval_topic = "0x" + Web3.keccak(text="Approval(address,address,uint256)").hex()
     transfer_topic = "0x" + Web3.keccak(text="Transfer(address,address,uint256)").hex()
-    logs = _chunked_logs(w3, token, last_block + 1, latest, [approval_topic, transfer_topic])
+    logs = _chunked_logs(w3, token, last_block + 1, latest, [[approval_topic, transfer_topic]])
     new = 0
     for log in logs:
         # HexBytes.hex() returns bare hex (no 0x) — normalize explicitly
