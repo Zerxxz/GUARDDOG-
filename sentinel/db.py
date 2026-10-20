@@ -29,6 +29,14 @@ CREATE TABLE IF NOT EXISTS verdicts (
     capture_id INTEGER REFERENCES captures(id),
     near_tx_hash TEXT
 );
+CREATE TABLE IF NOT EXISTS bait_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts REAL NOT NULL,
+    caller_ip TEXT NOT NULL,
+    user_agent TEXT,
+    method TEXT NOT NULL,
+    params_digest TEXT
+);
 """
 
 
@@ -62,5 +70,24 @@ def list_captures(limit=20):
     with connect() as conn:
         rows = conn.execute(
             "SELECT * FROM captures ORDER BY ts DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def record_bait_request(ts, caller_ip, user_agent, method, params_digest) -> int:
+    """Insert a fake-RPC contact row (T12). Never raises into the request path."""
+    with connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO bait_requests (ts, caller_ip, user_agent, method, params_digest)"
+            " VALUES (?,?,?,?,?)",
+            (ts, caller_ip, user_agent, method, params_digest),
+        )
+        return cur.lastrowid
+
+
+def list_bait_requests(limit=50):
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM bait_requests ORDER BY ts DESC LIMIT ?", (limit,)
         ).fetchall()
         return [dict(r) for r in rows]

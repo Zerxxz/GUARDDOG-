@@ -35,3 +35,13 @@ services:
 
 volumes:
   events:
+
+  bait-rpc:
+    build: .
+    command: uvicorn sentinel.bait_rpc:app --host 0.0.0.0 --port 8545
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - events:/app/sentinel
+    ports:
+      - "8545:8545" # PUBLIC — this is the bait, it must be reachable
