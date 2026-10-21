@@ -1,0 +1,57 @@
+
+==============================================================
+  SHOT 1 — the decoys are live (Base Sepolia)
+==============================================================
+decoy-00 0xDe1fe3FfA190eDCc020D79D629D21E2D964678D8  0.009999153189999651 ETH
+    decoy-01 0xCD669D15787F176230E151761f26b61ffdf2B728  0.01 ETH
+    decoy-02 0x94eB7e57b290866E24E853Cb36b5f86716c487F1  0.01 ETH
+    decoy-03 0x2C8152BbeD81FA6bFb6d8be6A482E26C1939607A  0.01 ETH
+    decoy-04 0x71825ce9E347Be7Ec15c0A5a1A921F5Ed0D80C65  0.01 ETH
+
+==============================================================
+  SHOT 2 — attacker strikes (simulated drainer, honest)
+==============================================================
+attacker EOA: 0x2ffCdA658Df365b91a410CA87a8D4D6dF742a8c7
+bait victim : 0xDe1fe3FfA190eDCc020D79D629D21E2D964678D8 (decoy-00)
+max-approval landed: tx 9a099700b556e2414c529789d4e111e138e2c8dae5f553b0253163fd48d60526
+→ trap listener should now capture this as a hostile approval
+
+==============================================================
+  SHOT 3 — Sentinel trap captures the contact
+==============================================================
+[CAPTURE] approval 0xde1fe3ff…→ spender 0x2ffcda65… tx 0x9a099700b556e2…
+scan done: blocks →48465046, 1 new capture(s)
+
+capture #4: approval | selector 0x095ea7b3 | confidence 95%
+attacker: 0x2ffcda658df365b91a410ca87a8d4d6df742a8c7
+evidence: 0x9a099700b556e2414c529789d4e111e138e2c8dae5f553b0253163fd48d60526
+
+==============================================================
+  SHOT 4 — verdict published on-chain (NEAR testnet)
+==============================================================
+verdict cap-4 → NEAR tx D3YZUfLtGdKwB2xkvs5Q4evdcojZoLFjhsXZS9zqwR3Y
+registry result: {'accepted': True, 'updated': True, 'mpc_signature_valid': False}
+registry now: {'total': '4', 'blocked': '4', 'last_publish': '1792614882539793664'}
+
+==============================================================
+  SHOT 5 — Leash: the attacker is now DENIED at signing
+==============================================================
+check → DENY [blocklist] — 0x2ffcda658df365b91a410ca87a8d4d6df742a8c7 is on the Sentinel blocklist
+→ the drainer's transaction is never signed. It does not exist.
+
+==============================================================
+  SHOT 6 — healthy agent flows under the same policy
+==============================================================
+check → ALLOW — all checks passed
+
+==============================================================
+  SHOT 7 — live Chain Signatures (MPC network signs)
+==============================================================
+big_r       : 037c16368f76174c27bb… (66 hex)
+s           : 60268385d5e977221a26…
+recovery_id : 0   (signed by the 8-node MPC network)
+request tx  : 3yE4TWNXuPFBP2bkDeRoAEUecoS5YHCjEsYaZhvcDad7
+
+==============================================================
+  DONE — every shot above is real, on live testnets
+==============================================================
