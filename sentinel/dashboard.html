@@ -126,6 +126,10 @@ async function refresh(){
 }
 refresh(); setInterval(refresh, 15000);
 
+// auto-run a leash check when the page is opened with ?check=0xADDR (used by the demo recording)
+const urlAddr = new URLSearchParams(location.search).get('check');
+if (urlAddr) { $('#lc-addr').value = urlAddr; setTimeout(()=>$('#lc-btn').click(), 800); }
+
 $('#lc-btn').onclick = async () => {
   const addr = $('#lc-addr').value.trim();
   if(!addr) return;
