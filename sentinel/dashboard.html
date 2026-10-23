@@ -4,268 +4,410 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GUARDDOG // CYBER-OPS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#050a0e; --panel:#0a1420; --panel2:#0d1a2a;
-    --line:#0f2a3d; --line-glow:#0ff3; --ink:#c8f0e8; --dim:#3d6b6b;
-    --cyan:#00f0ff; --green:#00ff88; --red:#ff2255; --amber:#ffaa00;
-    --magenta:#ff00cc; --violet:#9944ff;
-    --scan-opacity:.03;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:var(--bg);color:var(--ink);
-    font:14px/1.6 "Share Tech Mono",ui-monospace,Menlo,Consolas,monospace;
-    padding:28px;overflow-x:hidden;
-  }
-  /* scanline overlay */
-  body::after{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:999;
-    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,240,255,var(--scan-opacity)) 2px,rgba(0,240,255,var(--scan-opacity)) 4px);
-  }
-  /* grid bg */
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background-image:
-      linear-gradient(rgba(0,240,255,.03) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(0,240,255,.03) 1px,transparent 1px);
-    background-size:40px 40px;
-  }
-  .wrap{position:relative;z-index:1;max-width:1320px;margin:0 auto}
+:root{
+  --bg:#070707; --bg2:#0d0d0d; --bg3:#131313; --bg4:#1a1a1a;
+  --border:#222; --border2:#2e2e2e;
+  --ink:#e6e6e6; --ink2:#a8a8a8; --dim:#6a6a6a; --dim2:#4a4a4a;
+  --white:#ffffff; --red:#ff3b3b; --green:#39d67f; --amber:#f5b83d;
+  --sidebar-w:230px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:13px/1.65 ui-monospace,"SF Mono",Menlo,Consolas,monospace;overflow-x:hidden}
+::selection{background:#3a3a3a;color:#fff}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+a{color:var(--ink2)}
 
-  /* header */
-  header{display:flex;align-items:center;gap:16px;margin-bottom:24px}
-  header h1{
-    font-family:"Orbitron",sans-serif;font-size:26px;font-weight:900;
-    letter-spacing:3px;color:var(--cyan);
-    text-shadow:0 0 12px rgba(0,240,255,.6),0 0 40px rgba(0,240,255,.2);
-  }
-  header .tag{
-    font-size:10px;letter-spacing:2px;color:var(--dim);
-    border:1px solid var(--line);padding:3px 10px;border-radius:3px;
-    text-transform:uppercase;
-  }
-  .status-dot{
-    width:8px;height:8px;border-radius:50%;background:var(--green);
-    box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* subtle cyber texture */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:44px 44px}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.5;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.14) 3px,rgba(0,0,0,.14) 4px)}
 
-  /* panels */
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .panel{
-    background:var(--panel);
-    border:1px solid var(--line);border-radius:6px;padding:18px;
-    position:relative;overflow:hidden;
-  }
-  .panel::before{
-    content:"";position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--cyan));
-    opacity:.6;
-  }
-  .panel h2{
-    font-family:"Orbitron",sans-serif;font-size:10px;letter-spacing:3px;
-    text-transform:uppercase;color:var(--cyan);margin-bottom:14px;
-    text-shadow:0 0 8px rgba(0,240,255,.4);
-  }
+/* ---------- LANDING ---------- */
+#landing{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s}
+#landing.hide{opacity:0;visibility:hidden}
+.l-box{text-align:center;position:relative;z-index:2}
+.l-eyebrow{font-size:10px;letter-spacing:6px;color:var(--dim);text-transform:uppercase;margin-bottom:18px}
+.l-title{font-size:84px;font-weight:800;letter-spacing:10px;color:var(--white);line-height:1;
+  text-shadow:0 0 30px rgba(255,255,255,.15)}
+.l-title .hollow{color:transparent;-webkit-text-stroke:1.5px var(--dim2)}
+.l-sub{color:var(--ink2);font-size:13px;letter-spacing:2px;margin-top:18px}
+.l-line{width:340px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:30px auto}
+.l-status{display:flex;gap:26px;justify-content:center;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:38px}
+.l-status b{color:var(--ink2);font-weight:400}
+.enter{background:transparent;border:1px solid var(--border2);color:var(--ink);padding:15px 58px;font:inherit;font-size:12px;letter-spacing:5px;text-transform:uppercase;cursor:pointer;transition:all .18s}
+.enter:hover{background:var(--white);color:#000;border-color:var(--white)}
+.l-foot{position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:2px;color:var(--dim2)}
+.blink{animation:blink 1.1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
 
-  /* KPIs */
-  .kpis{display:flex;gap:24px;flex-wrap:wrap}
-  .kpi{min-width:110px;text-align:center}
-  .kpi .n{
-    font-family:"Orbitron",sans-serif;font-size:32px;font-weight:900;
-    color:var(--green);text-shadow:0 0 14px rgba(0,255,136,.5);
-  }
-  .kpi .l{font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+/* ---------- SHELL ---------- */
+#app{display:none;position:relative;z-index:1}
+#app.show{display:block}
+.sidebar{width:var(--sidebar-w);position:fixed;left:0;top:0;bottom:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50}
+.s-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.s-logo .n{font-size:17px;font-weight:800;letter-spacing:4px;color:var(--white)}
+.s-logo .n span{color:var(--dim)}
+.s-logo .v{font-size:9px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;margin-top:3px}
+.s-nav{flex:1;padding:14px 0;overflow-y:auto}
+.s-sec{font-size:9px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;padding:14px 20px 6px}
+.s-nav a{display:flex;align-items:center;gap:11px;padding:9px 20px;color:var(--dim);text-decoration:none;font-size:12px;letter-spacing:.8px;border-left:2px solid transparent;transition:all .12s}
+.s-nav a:hover{color:var(--ink);background:var(--bg3)}
+.s-nav a.active{color:var(--white);background:var(--bg3);border-left-color:var(--white)}
+.s-nav a .ic{width:15px;text-align:center;color:var(--dim2)}
+.s-nav a.active .ic{color:var(--white)}
+.s-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
+.s-foot .row{display:flex;align-items:center;gap:7px;margin-top:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.2s infinite}
+.main{margin-left:var(--sidebar-w);padding:30px 34px;min-height:100vh}
 
-  /* verdict cards */
-  .verdict{
-    border:1px solid var(--line);border-left:3px solid var(--red);
-    border-radius:4px;padding:10px 12px;margin-bottom:8px;font-size:12px;
-    background:var(--panel2);transition:border-color .2s;
-  }
-  .verdict:hover{border-color:var(--cyan);border-left-color:var(--cyan)}
-  .verdict .addr{color:var(--red);font-weight:700;text-shadow:0 0 6px rgba(255,34,85,.4)}
-  .verdict .chain{color:var(--cyan);font-size:10px}
-  .verdict .conf{color:var(--amber)}
-  .verdict .line{color:var(--dim);font-size:11px;margin-top:3px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.topbar h1{font-size:20px;font-weight:700;letter-spacing:2px;color:var(--white);text-transform:uppercase}
+.topbar .crumb{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+.topbar .clock{font-size:11px;color:var(--dim);letter-spacing:1px}
 
-  /* decoys */
-  .decoy{
-    display:flex;justify-content:space-between;font-size:12px;
-    padding:6px 0;border-bottom:1px solid var(--line);
-  }
-  .decoy:last-child{border:none}
-  .decoy .bal{color:var(--green);text-shadow:0 0 6px rgba(0,255,136,.3)}
+.page{display:none}
+.page.active{display:block;animation:fadein .25s}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-  /* inputs & buttons */
-  input{
-    background:var(--bg);border:1px solid var(--line);color:var(--cyan);
-    padding:10px 14px;border-radius:4px;width:100%;font:inherit;
-    outline:none;transition:border-color .2s,box-shadow .2s;
-  }
-  input:focus{border-color:var(--cyan);box-shadow:0 0 10px rgba(0,240,255,.2)}
-  input::placeholder{color:var(--dim)}
-  button{
-    font-family:"Orbitron",sans-serif;font-size:11px;font-weight:700;
-    letter-spacing:1px;text-transform:uppercase;
-    border:1px solid var(--cyan);color:var(--cyan);background:transparent;
-    padding:10px 20px;border-radius:4px;cursor:pointer;
-    transition:all .2s;position:relative;overflow:hidden;
-  }
-  button:hover{background:rgba(0,240,255,.08);box-shadow:0 0 16px rgba(0,240,255,.3)}
-  button:active{transform:scale(.97)}
-  button:disabled{opacity:.35;cursor:wait}
-  .btn-red{border-color:var(--red);color:var(--red)}
-  .btn-red:hover{background:rgba(255,34,85,.08);box-shadow:0 0 16px rgba(255,34,85,.3)}
-  .btn-blue{border-color:var(--violet);color:var(--violet)}
-  .btn-blue:hover{background:rgba(153,68,255,.08);box-shadow:0 0 16px rgba(153,68,255,.3)}
+/* ---------- COMPONENTS ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.card{background:var(--bg2);border:1px solid var(--border);padding:18px;position:relative;overflow:hidden}
+.card::after{content:"";position:absolute;top:0;left:0;width:26px;height:1px;background:var(--dim)}
+.card .lb{font-size:9px;letter-spacing:2.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+.card .vl{font-size:30px;font-weight:700;color:var(--white);letter-spacing:1px}
+.card .vl.red{color:var(--red)}
+.card .note{font-size:10px;color:var(--dim2);margin-top:6px}
 
-  /* results */
-  .result{margin-top:12px;font-size:13px;white-space:pre-wrap}
-  .result .ok{color:var(--green);text-shadow:0 0 6px rgba(0,255,136,.3)}
-  .result .bad{color:var(--red);text-shadow:0 0 6px rgba(255,34,85,.3)}
-  .line{font-size:12px;color:var(--dim);margin:2px 0}
+.panel{background:var(--bg2);border:1px solid var(--border);margin-bottom:18px}
+.panel .hd{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.panel .hd h3{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.panel .bd{padding:16px 18px}
 
-  /* glitch effect on title */
-  @keyframes glitch{
-    0%,90%,100%{transform:none;opacity:1}
-    92%{transform:translateX(-2px) skewX(-1deg);opacity:.8}
-    94%{transform:translateX(2px) skewX(1deg);opacity:.9}
-    96%{transform:none;opacity:1}
-  }
-  header h1{animation:glitch 6s infinite}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--dim);text-align:left;font-weight:400;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--bg4);color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
 
-  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+.badge{display:inline-block;padding:2px 9px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid}
+.b-red{color:var(--red);border-color:#4d1a1a;background:#160b0b}
+.b-green{color:var(--green);border-color:#17402a;background:#0a1710}
+.b-gray{color:var(--ink2);border-color:var(--border2);background:var(--bg4)}
+.b-amber{color:var(--amber);border-color:#4d3d14;background:#171208}
+
+.v-item{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--red);padding:12px 14px;margin-bottom:10px;font-size:12px}
+.v-item .r1{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap}
+.v-item .id{color:var(--white);font-weight:700}
+.v-item .addr{color:var(--red)}
+.v-item .mt{color:var(--dim);font-size:11px}
+
+.btn{background:var(--bg3);border:1px solid var(--border2);color:var(--ink);padding:10px 22px;font:inherit;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.btn:hover{background:var(--white);color:#000;border-color:var(--white)}
+.btn:disabled{opacity:.35;cursor:wait}
+.btn.ghost{background:transparent}
+.btn.red{border-color:#4d1a1a;color:var(--red)}
+.btn.red:hover{background:var(--red);color:#000;border-color:var(--red)}
+
+input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--border);color:var(--white);padding:10px 14px;font:inherit;font-size:12px;width:100%}
+input:focus{outline:none;border-color:var(--dim)}
+input::placeholder{color:var(--dim2)}
+
+.out{margin-top:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);font-size:12px;min-height:42px;white-space:pre-wrap}
+.out .deny{color:var(--red)}
+.out .allow{color:var(--green)}
+.ln{font-size:12px;color:var(--dim);margin:3px 0}
+.ln.ok{color:var(--green)}
+.ln.bad{color:var(--red)}
+.mono{font-family:inherit}
+.cut{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.flex{display:flex;gap:10px;align-items:center}
+.mt{margin-top:14px}.mb{margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:980px){.grid2{grid-template-columns:1fr}}
+
+/* ticker */
+.ticker{border:1px solid var(--border);background:var(--bg2);padding:9px 14px;font-size:11px;color:var(--dim);overflow:hidden;white-space:nowrap;margin-bottom:22px}
+.ticker b{color:var(--ink2);font-weight:400}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>🐕‍🦺 GUARDDOG</h1>
-    <span class="tag">cyber-ops // testnet live</span>
-    <div class="status-dot"></div>
-  </header>
 
-  <div class="panel" style="margin-bottom:16px">
-    <h2>▸ Registry Pulse</h2>
-    <div class="kpis" id="kpis">
-      <div class="kpi"><div class="n" id="k-total">–</div><div class="l">verdicts on-chain</div></div>
-      <div class="kpi"><div class="n" id="k-blocked">–</div><div class="l">addresses blocked</div></div>
-      <div class="kpi"><div class="n" id="k-decoys">–</div><div class="l">decoys live</div></div>
-      <div class="kpi"><div class="n" id="k-captures">–</div><div class="l">captures logged</div></div>
+<!-- ============ LANDING ============ -->
+<div id="landing">
+  <div class="l-box">
+    <div class="l-eyebrow">SENTINEL // LEASH // CHAIN SIGNATURES</div>
+    <div class="l-title">GUARD<span class="hollow">DOG</span></div>
+    <div class="l-sub">THE IMMUNE SYSTEM FOR AI AGENTS THAT HOLD MONEY</div>
+    <div class="l-line"></div>
+    <div class="l-status">
+      <span>NEAR <b id="l-near">····</b></span>
+      <span>VERDICTS <b id="l-verd">··</b></span>
+      <span>BASE SEPOLIA <b>LIVE</b></span>
     </div>
+    <button class="enter" onclick="enterApp()">ENTER OPS<span class="blink">_</span></button>
   </div>
+  <div class="l-foot">NEAR HACKATHON 2026 · TESTNET · NOTHING ON THIS SCREEN IS MOCKED</div>
+</div>
 
-  <div class="grid">
-    <div class="panel">
-      <h2>▸ Threat Feed — latest verdicts</h2>
-      <div id="verdicts"></div>
+<!-- ============ APP SHELL ============ -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="s-logo">
+      <div class="n">GUARD<span>DOG</span></div>
+      <div class="v">cyber-ops console</div>
     </div>
-    <div class="panel">
-      <h2>▸ Decoys — Base Sepolia</h2>
-      <div id="decoys"></div>
+    <nav class="s-nav">
+      <div class="s-sec">Overview</div>
+      <a href="#dashboard" data-page="dashboard" class="active"><span class="ic">◉</span>Dashboard</a>
+      <a href="#threats" data-page="threats"><span class="ic">▲</span>Threat Feed</a>
+      <a href="#decoys" data-page="decoys"><span class="ic">◈</span>Decoys</a>
+      <div class="s-sec">Defense</div>
+      <a href="#leash" data-page="leash"><span class="ic">⛓</span>Leash Check</a>
+      <div class="s-sec">Operations</div>
+      <a href="#actions" data-page="actions"><span class="ic">⚡</span>Actions</a>
+    </nav>
+    <div class="s-foot">
+      registry: guarddog-sentinel.testnet
+      <div class="row"><span class="dot"></span>testnet live · sync 15s</div>
     </div>
-  </div>
+  </aside>
 
-  <div class="grid" style="margin-top:16px">
-    <div class="panel">
-      <h2>▸ Leash Check</h2>
-      <p class="line" style="margin-bottom:10px">type any address → instant allow/deny from the real policy engine</p>
-      <div class="row"><input id="lc-addr" placeholder="0x… address to check" spellcheck="false"></div>
-      <div style="margin-top:12px"><button id="lc-btn">CHECK</button></div>
-      <div class="result" id="lc-out"></div>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb" id="crumb">overview / dashboard</div>
+        <h1 id="ptitle">Dashboard</h1>
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
     </div>
-    <div class="panel">
-      <h2>▸ Actions</h2>
-      <p class="line" style="margin-bottom:10px">run the real pipeline live</p>
-      <button id="strike-btn" class="btn-red">⚡ SIMULATE STRIKE</button>
-      <button id="mpc-btn" class="btn-blue" style="margin-left:12px">🔑 MPC SIGN</button>
-      <div class="result" id="action-out"></div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="pg-dashboard">
+      <div class="ticker" id="ticker">booting feed…</div>
+      <div class="cards">
+        <div class="card"><div class="lb">Verdicts on-chain</div><div class="vl" id="k-total">–</div><div class="note">NEAR registry</div></div>
+        <div class="card"><div class="lb">Addresses blocked</div><div class="vl red" id="k-blocked">–</div><div class="note">leash deny list</div></div>
+        <div class="card"><div class="lb">Decoys live</div><div class="vl" id="k-decoys">–</div><div class="note">base sepolia</div></div>
+        <div class="card"><div class="lb">Captures logged</div><div class="vl" id="k-captures">–</div><div class="note">trap listener</div></div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><h3>Latest verdicts</h3><a href="#threats" class="ln" style="font-size:10px">view all →</a></div>
+          <div class="bd" id="dash-feed"><div class="ln">loading…</div></div>
+        </div>
+        <div class="panel">
+          <div class="hd"><h3>System</h3></div>
+          <div class="bd" id="sys-panel">
+            <div class="ln">sentinel trap .......... <span style="color:var(--green)">ARMED</span></div>
+            <div class="ln">registry contract ...... <span style="color:var(--green)">DEPLOYED</span></div>
+            <div class="ln">mpc network ............ <span style="color:var(--green)">8 NODES</span></div>
+            <div class="ln">last publish (ns) ...... <span id="k-last" style="color:var(--white)">–</span></div>
+            <div class="ln">leash engine ........... <span style="color:var(--green)">ACTIVE</span></div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- THREATS -->
+    <div class="page" id="pg-threats">
+      <div class="panel">
+        <div class="hd"><h3>Verdict feed — sentinel registry</h3><span class="badge b-gray" id="th-count">0 entries</span></div>
+        <div class="bd" id="threat-list"><div class="ln">loading…</div></div>
+      </div>
+    </div>
+
+    <!-- DECOYS -->
+    <div class="page" id="pg-decoys">
+      <div class="panel">
+        <div class="hd"><h3>Bait wallets — base sepolia</h3><span class="badge b-green">armed</span></div>
+        <div class="bd">
+          <table>
+            <thead><tr><th>Label</th><th>Address</th><th>Balance</th><th>Status</th></tr></thead>
+            <tbody id="decoy-table"><tr><td colspan="4">loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ln">Balances are read live from Base Sepolia. These wallets carry bait funds and a loose-approval token — drainer catnip.</div>
+    </div>
+
+    <!-- LEASH -->
+    <div class="page" id="pg-leash">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><h3>Pre-sign policy check</h3></div>
+          <div class="bd">
+            <div class="ln mb">Any address → instant allow/deny from the real policy engine (blocklist from the on-chain registry + caps + velocity + cooldown).</div>
+            <div class="mb"><input type="text" id="lc-addr" placeholder="0x… address to check" spellcheck="false"></div>
+            <div class="flex mb">
+              <input type="number" id="lc-val" step="0.0001" value="0.001" style="max-width:130px">
+              <button class="btn" id="lc-btn">Run check</button>
+            </div>
+            <div class="out" id="lc-out"><span class="ln">awaiting input…</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="hd"><h3>How Leash works</h3></div>
+          <div class="bd">
+            <div class="ln">1. agent forms an intent (to, value)</div>
+            <div class="ln">2. leash checks registry blocklist + policy</div>
+            <div class="ln">3. deny → <span style="color:var(--red)">no signature is ever produced</span></div>
+            <div class="ln">4. allow → signed via NEAR Chain Signatures</div>
+            <div class="ln mt">A denied transaction doesn't fail on-chain. It never exists. Prompt injection can't bypass a key the model never holds.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="page" id="pg-actions">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><h3>Attack pipeline — live</h3></div>
+          <div class="bd">
+            <div class="ln mb">strike → capture → verdict on-chain → blocklist. every step is a real testnet transaction.</div>
+            <button class="btn red" id="strike-btn">⚡ Simulate strike</button>
+            <div class="out" id="strike-out"><span class="ln">idle</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="hd"><h3>Chain signatures (MPC)</h3></div>
+          <div class="bd">
+            <div class="ln mb">request a real signature from the 8-node NEAR MPC network over a fresh payload (~15–90s).</div>
+            <button class="btn ghost" id="mpc-btn">🔑 Request MPC signature</button>
+            <div class="out" id="mpc-out"><span class="ln">idle</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
-const $ = s => document.querySelector(s);
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const cut=s=>s?`<span class="cut" title="${s}">${s.slice(0,12)}…${s.slice(-6)}</span>`:'—';
+let entered=false;
 
+function enterApp(){
+  if(entered)return; entered=true;
+  $('#landing').classList.add('hide');
+  $('#app').classList.add('show');
+}
+
+/* routing */
+const TITLES={dashboard:'Dashboard',threats:'Threat Feed',decoys:'Decoys',leash:'Leash Check',actions:'Actions'};
+const CRUMBS={dashboard:'overview / dashboard',threats:'overview / threat feed',decoys:'overview / decoys',leash:'defense / leash check',actions:'operations / actions'};
+function route(){
+  let p=(location.hash||'#dashboard').slice(1);
+  if(!TITLES[p])p='dashboard';
+  if(location.hash)enterApp();
+  $$('.s-nav a').forEach(a=>a.classList.toggle('active',a.dataset.page===p));
+  $$('.page').forEach(x=>x.classList.remove('active'));
+  $('#pg-'+p).classList.add('active');
+  $('#ptitle').textContent=TITLES[p];
+  $('#crumb').textContent=CRUMBS[p];
+}
+window.addEventListener('hashchange',route);
+
+/* clock */
+setInterval(()=>{const d=new Date();$('#clock').textContent=d.toISOString().replace('T',' ').slice(0,19)+' UTC';},1000);
+
+/* data */
 async function refresh(){
   try{
-    const r = await fetch('/api/state');
-    const d = await r.json();
-    $('#k-total').textContent = d.stats?.total ?? '–';
-    $('#k-blocked').textContent = d.stats?.blocked ?? '–';
-    $('#k-decoys').textContent = d.decoys?.length ?? '–';
-    $('#k-captures').textContent = d.captures?.length ?? '–';
-    $('#verdicts').innerHTML = (d.verdicts||[]).slice(0,6).map(v=>`
-      <div class="verdict">
-        <span class="addr">${v.attacker.slice(0,10)}…</span>
-        <span class="chain"> ${v.chain}</span>
-        <span class="conf"> conf ${v.confidence}%</span>
-        <div class="line">id: ${v.id} · evidence: ${(v.evidence_tx||'').slice(0,18)}…</div>
-      </div>`).join('') || '<div class="line">no verdicts yet</div>';
-    $('#decoys').innerHTML = (d.decoys||[]).map(x=>`
-      <div class="decoy">
-        <span>${x.label} · ${x.address.slice(0,10)}…</span>
-        <span class="bal">${x.eth.toFixed(6)} ETH</span>
-      </div>`).join('') || '<div class="line">loading…</div>';
-  }catch(e){ console.error(e); }
+    const r=await fetch('/api/state');const d=await r.json();
+    const total=d.stats?.total??'–', blocked=d.stats?.blocked??'–';
+    $('#k-total').textContent=total;
+    $('#k-blocked').textContent=blocked;
+    $('#k-decoys').textContent=d.decoys?.length??'–';
+    $('#k-captures').textContent=(d.captures?.length??0);
+    $('#k-last').textContent=d.stats?.last_publish?String(d.stats.last_publish).slice(-10):'–';
+    $('#l-near').textContent='LIVE'; $('#l-verd').textContent=String(total).padStart(2,'0');
+    $('#ticker').innerHTML=`<b>FEED</b> · ${total} verdicts on-chain · ${blocked} addresses blocked · ${d.decoys?.length??0} decoys armed · last publish ${d.stats?.last_publish?String(d.stats.last_publish).slice(-10):'—'} · <span class="blink">▮</span>`;
+
+    /* dash feed */
+    $('#dash-feed').innerHTML=(d.verdicts||[]).slice(0,3).map(v=>`
+      <div class="v-item">
+        <div class="r1"><span class="id">${v.id}</span><span class="badge b-gray">${v.chain}</span></div>
+        <div class="addr">${cut(v.attacker)}</div>
+        <div class="mt">confidence ${v.confidence}% · evidence ${cut(v.evidence_tx)}</div>
+      </div>`).join('')||'<div class="ln">no verdicts yet — run a strike</div>';
+
+    /* threats page */
+    const vs=d.verdicts||[];
+    $('#th-count').textContent=vs.length+' entries';
+    $('#threat-list').innerHTML=vs.map(v=>`
+      <div class="v-item">
+        <div class="r1"><span class="id">${v.id}</span><span class="badge b-red">${v.chain}</span><span class="badge b-amber">conf ${v.confidence}%</span></div>
+        <div class="addr">attacker ${cut(v.attacker)}</div>
+        <div class="mt">selector ${v.selector||'—'} · pattern ${v.pattern_hash||'—'} · evidence ${cut(v.evidence_tx)}</div>
+      </div>`).join('')||'<div class="ln">feed empty</div>';
+
+    /* decoys */
+    $('#decoy-table').innerHTML=(d.decoys||[]).map(x=>`
+      <tr><td>${x.label}</td><td class="mono">${cut(x.address)}</td><td style="color:var(--white)">${x.eth.toFixed(6)} ETH</td><td><span class="badge b-green">armed</span></td></tr>`).join('')
+      ||'<tr><td colspan="4">loading…</td></tr>';
+  }catch(e){console.error(e);}
 }
-refresh(); setInterval(refresh, 15000);
 
-// auto-run a leash check when the page is opened with ?check=0xADDR (used by the demo recording)
-const urlAddr = new URLSearchParams(location.search).get('check');
-if (urlAddr) { $('#lc-addr').value = urlAddr; setTimeout(()=>$('#lc-btn').click(), 800); }
-
-$('#lc-btn').onclick = async () => {
-  const addr = $('#lc-addr').value.trim();
-  if(!addr) return;
-  $('#lc-btn').disabled = true;
-  $('#lc-out').innerHTML = '<span class="line">checking…</span>';
+/* leash check */
+$('#lc-btn').onclick=async()=>{
+  const addr=$('#lc-addr').value.trim(); if(!addr)return;
+  $('#lc-btn').disabled=true;
+  $('#lc-out').innerHTML='<span class="ln">querying policy engine…</span>';
   try{
-    const r = await fetch('/api/leash_check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({addr})});
-    const d = await r.json();
-    $('#lc-out').innerHTML = d.allowed
-      ? `<span class="ok">✓ ALLOW — ${d.reason}</span>`
-      : `<span class="bad">✗ DENY [${d.rule}] — ${d.reason}</span>`;
-  }catch(e){ $('#lc-out').innerHTML = `<span class="bad">error: ${e}</span>`; }
-  $('#lc-btn').disabled = false;
+    const r=await fetch('/api/leash_check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({addr,chain:'base-sepolia',value_eth:parseFloat($('#lc-val').value)||0.001})});
+    const d=await r.json();
+    $('#lc-out').innerHTML=d.allowed
+      ?`<span class="allow">✓ ALLOW</span> <span class="ln">— ${d.reason}</span>`
+      :`<span class="deny">✗ DENY [${d.rule}]</span> <span class="ln">— ${d.reason}</span><br><span class="ln">→ transaction never signed. it does not exist.</span>`;
+  }catch(e){$('#lc-out').innerHTML=`<span class="deny">error: ${e}</span>`;}
+  $('#lc-btn').disabled=false;
 };
 
-$('#strike-btn').onclick = async () => {
-  const btn = $('#strike-btn');
-  btn.disabled = true;
-  $('#action-out').innerHTML = '<span class="line">⚡ running full pipeline…</span>';
+/* strike */
+$('#strike-btn').onclick=async()=>{
+  const btn=$('#strike-btn'),box=$('#strike-out');
+  btn.disabled=true;box.innerHTML='<span class="ln">running real pipeline on testnet…</span>';
   try{
-    const r = await fetch('/api/strike',{method:'POST'});
-    const d = await r.json();
-    $('#action-out').innerHTML = d.steps.map(s=>`
-      <div class="line ${s.ok?'ok':'bad'}">${s.ok?'✓':'✗'} ${s.step}: ${s.detail}</div>`).join('') +
-      `<div class="line" style="margin-top:6px">leash: ${d.leash.allowed?'ALLOW':'DENY ['+d.leash.rule+']'} — ${d.leash.reason}</div>`;
+    const r=await fetch('/api/strike',{method:'POST'});const d=await r.json();
+    box.innerHTML=d.steps.map(s=>`<div class="ln ${s.ok?'ok':'bad'}">${s.ok?'✓':'✗'} <b>${s.step}</b> — ${s.detail}</div>`).join('')
+      +(d.near_tx?`<div class="ln mt">near tx: ${d.near_tx}</div>`:'')
+      +(d.capture?.tx_hash?`<div class="ln">evidence: ${d.capture.tx_hash}</div>`:'')
+      +(d.leash?`<div class="ln ${d.leash.allowed?'ok':'bad'}">leash: ${d.leash.allowed?'ALLOW':'DENY ['+d.leash.rule+']'} — ${d.leash.reason}</div>`:'');
     refresh();
-  }catch(e){ $('#action-out').innerHTML = `<span class="bad">error: ${e}</span>`; }
-  btn.disabled = false;
+  }catch(e){box.innerHTML=`<div class="ln bad">error: ${e}</div>`;}
+  btn.disabled=false;
 };
 
-$('#mpc-btn').onclick = async () => {
-  const btn = $('#mpc-btn');
-  btn.disabled = true;
-  const box = $('#action-out');
-  box.innerHTML = '<span class="line">🔑 requesting MPC signature (8-node network)…</span>';
+/* mpc */
+$('#mpc-btn').onclick=async()=>{
+  const btn=$('#mpc-btn'),box=$('#mpc-out');
+  btn.disabled=true;box.innerHTML='<span class="ln">requesting signature from the 8-node MPC network… (~15–90s)</span>';
   try{
-    const r = await fetch('/api/mpc_sign',{method:'POST'});
-    const d = await r.json();
-    box.innerHTML = d.ok
-      ? `<div class="line ok">✓ signature in ${d.seconds}s</div>
-         <div class="line">big_r: ${d.big_r.slice(0,26)}…</div>
-         <div class="line">s: ${d.s.slice(0,26)}…  recovery_id: ${d.recovery_id}</div>
-         <div class="line" style="color:var(--dim)">request tx: ${d.request_tx}</div>`
-      : `<div class="line bad">✗ ${d.error}</div>`;
-  }catch(e){ box.innerHTML = `<div class="line bad">error: ${e}</div>`; }
-  btn.disabled = false;
+    const r=await fetch('/api/mpc_sign',{method:'POST'});const d=await r.json();
+    const big=typeof d.big_r==='object'?d.big_r.affine_point:d.big_r;
+    const s=typeof d.s==='object'?d.s.scalar:d.s;
+    box.innerHTML=d.ok
+      ?`<div class="ln ok">✓ signature received in ${d.seconds}s — signed by NEAR Chain Signatures</div>
+        <div class="ln">big_r: ${String(big).slice(0,30)}…</div>
+        <div class="ln">s: ${String(s).slice(0,30)}… · recovery_id: ${d.recovery_id}</div>
+        <div class="ln">request tx: ${d.request_tx}</div>`
+      :`<div class="ln bad">✗ ${d.error}</div>`;
+  }catch(e){box.innerHTML=`<div class="ln bad">error: ${e}</div>`;}
+  btn.disabled=false;
 };
+
+/* boot */
+route(); refresh(); setInterval(refresh,15000);
+const urlAddr=new URLSearchParams(location.search).get('check');
+if(urlAddr){enterApp();location.hash='leash';route();$('#lc-addr').value=urlAddr;setTimeout(()=>$('#lc-btn').click(),700);}
 </script>
 </body>
 </html>
