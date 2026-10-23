@@ -3,411 +3,553 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GUARDDOG // CYBER-OPS</title>
+<title>GUARDDOG — Immune System for AI Agents</title>
+<meta name="description" content="GUARDDOG unifies Sentinel honeypots, on-chain verdicts and the Leash signing-layer firewall into one platform on NEAR testnet. Built for the NEAR HACKATHON 2026.">
 <style>
+/* ================================================================
+   GUARDDOG design system — adapted from the SKYWEE monochrome system
+   (pure black/white/gray; giant watermark, film grain, hairline glass,
+   light default + dark mode, Inter/mono pairing)
+   ================================================================ */
 :root{
-  --bg:#070707; --bg2:#0d0d0d; --bg3:#131313; --bg4:#1a1a1a;
-  --border:#222; --border2:#2e2e2e;
-  --ink:#e6e6e6; --ink2:#a8a8a8; --dim:#6a6a6a; --dim2:#4a4a4a;
-  --white:#ffffff; --red:#ff3b3b; --green:#39d67f; --amber:#f5b83d;
-  --sidebar-w:230px;
+  --radius:12px;
+  --bg:#fafafa; --fg:#0a0a0a;
+  --card:#ffffff; --card-fg:#0a0a0a;
+  --muted:#f0f0f0; --muted-fg:#5f5f5f;
+  --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.16);
+  --input:rgba(0,0,0,.12); --ring:#0a0a0a;
+  --primary:#0a0a0a; --primary-fg:#fafafa;
+  --sidebar:#f2f2f2; --sidebar-fg:#0a0a0a;
+  --sidebar-accent:rgba(0,0,0,.06);
+  --wm:rgba(0,0,0,.05);
+  --grid-line:rgba(0,0,0,.045);
+  --glass:rgba(255,255,255,.65);
+  --glass-strong:rgba(255,255,255,.85);
+  --hairline:rgba(0,0,0,.10);
+  --grain-opacity:.025;
+  --ok:#0a7a3c; --ok-bg:rgba(10,122,60,.08);
+  --bad:#b3121b; --bad-bg:rgba(179,18,27,.07);
+  --warn:#8a6d00; --warn-bg:rgba(138,109,0,.08);
+  --sb-w:264px;
+}
+.dark{
+  --bg:#0a0a0a; --fg:#f5f5f5;
+  --card:#141414; --card-fg:#f5f5f5;
+  --muted:#1c1c1c; --muted-fg:#a3a3a3;
+  --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.18);
+  --input:rgba(255,255,255,.14); --ring:#f5f5f5;
+  --primary:#f5f5f5; --primary-fg:#0a0a0a;
+  --sidebar:#101010; --sidebar-fg:#f5f5f5;
+  --sidebar-accent:rgba(255,255,255,.07);
+  --wm:rgba(255,255,255,.045);
+  --grid-line:rgba(255,255,255,.05);
+  --glass:rgba(20,20,20,.55);
+  --glass-strong:rgba(16,16,16,.85);
+  --hairline:rgba(255,255,255,.12);
+  --grain-opacity:.04;
+  --ok:#4ade80; --ok-bg:rgba(74,222,128,.09);
+  --bad:#f87171; --bad-bg:rgba(248,113,113,.09);
+  --warn:#facc15; --warn-bg:rgba(250,204,21,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font:13px/1.65 ui-monospace,"SF Mono",Menlo,Consolas,monospace;overflow-x:hidden}
-::selection{background:#3a3a3a;color:#fff}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-a{color:var(--ink2)}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--fg);
+  font:14px/1.6 "Inter",-apple-system,"Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+::selection{background:var(--primary);color:var(--primary-fg)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
-/* subtle cyber texture */
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
-  background-size:44px 44px}
-body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.5;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.14) 3px,rgba(0,0,0,.14) 4px)}
+/* ---------- backdrops (skywee patterns) ---------- */
+.grain{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+.gridbg{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(to right,var(--grid-line) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 40%,black 0%,transparent 80%);
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 40%,black 0%,transparent 80%)}
+.watermark{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.watermark span{
+  position:absolute;bottom:-6vw;left:50%;transform:translateX(-50%);
+  font-weight:900;font-size:clamp(6rem,24vw,19rem);letter-spacing:-.06em;line-height:.82;
+  color:var(--wm);white-space:nowrap;user-select:none}
 
-/* ---------- LANDING ---------- */
-#landing{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s}
+/* ---------- primitives ---------- */
+.glass{background:var(--glass);border:1px solid var(--hairline);backdrop-filter:blur(12px)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:500;letter-spacing:.02em;border:1px solid var(--border)}
+.badge.ok{color:var(--ok);background:var(--ok-bg);border-color:transparent}
+.badge.bad{color:var(--bad);background:var(--bad-bg);border-color:transparent}
+.badge.warn{color:var(--warn);background:var(--warn-bg);border-color:transparent}
+.badge.ghost{color:var(--muted-fg);background:transparent}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;
+  background:var(--primary);color:var(--primary-fg);transition:opacity .15s,transform .15s}
+.btn:hover{opacity:.85}.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:wait}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--border-strong)}
+.btn.ghost:hover{background:var(--sidebar-accent);opacity:1}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.btn.danger:hover{background:var(--bad-bg);opacity:1}
+input[type=text],input[type=number]{width:100%;background:var(--card);border:1px solid var(--input);border-radius:10px;
+  padding:10px 14px;font:inherit;font-size:13px;color:var(--fg);outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus{border-color:var(--ring);box-shadow:0 0 0 3px var(--sidebar-accent)}
+input::placeholder{color:var(--muted-fg)}
+.eyebrow{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);font-family:ui-monospace,Menlo,monospace}
+.fade{animation:fade .4s cubic-bezier(.22,1,.36,1)}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .55s cubic-bezier(.22,1,.36,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2.4s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.cut{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+
+/* ================= LANDING ================= */
+#landing{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;background:var(--bg);transition:opacity .45s,visibility .45s}
 #landing.hide{opacity:0;visibility:hidden}
-.l-box{text-align:center;position:relative;z-index:2}
-.l-eyebrow{font-size:10px;letter-spacing:6px;color:var(--dim);text-transform:uppercase;margin-bottom:18px}
-.l-title{font-size:84px;font-weight:800;letter-spacing:10px;color:var(--white);line-height:1;
-  text-shadow:0 0 30px rgba(255,255,255,.15)}
-.l-title .hollow{color:transparent;-webkit-text-stroke:1.5px var(--dim2)}
-.l-sub{color:var(--ink2);font-size:13px;letter-spacing:2px;margin-top:18px}
-.l-line{width:340px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:30px auto}
-.l-status{display:flex;gap:26px;justify-content:center;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:38px}
-.l-status b{color:var(--ink2);font-weight:400}
-.enter{background:transparent;border:1px solid var(--border2);color:var(--ink);padding:15px 58px;font:inherit;font-size:12px;letter-spacing:5px;text-transform:uppercase;cursor:pointer;transition:all .18s}
-.enter:hover{background:var(--white);color:#000;border-color:var(--white)}
-.l-foot{position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:2px;color:var(--dim2)}
-.blink{animation:blink 1.1s steps(2) infinite}
-@keyframes blink{50%{opacity:0}}
+.l-head{display:flex;align-items:center;justify-content:space-between;padding:22px 28px;position:relative;z-index:2}
+.l-logo{display:flex;align-items:center;gap:10px}
+.l-logo .mark{width:34px;height:34px;border-radius:9px;background:var(--primary);color:var(--primary-fg);display:flex;align-items:center;justify-content:center;font-size:17px}
+.l-logo .name{font-weight:800;letter-spacing:.14em;font-size:15px}
+.l-github{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;color:var(--muted-fg);border:1px solid var(--hairline);background:var(--glass);transition:all .15s}
+.l-github:hover{color:var(--fg);border-color:var(--border-strong)}
+.l-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:2;padding:0 24px;text-align:center}
+.l-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid var(--hairline);background:var(--glass);font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--muted-fg);text-transform:uppercase;margin-bottom:26px}
+.l-title{font-size:clamp(40px,7.5vw,76px);font-weight:800;letter-spacing:-.05em;line-height:1.04;color:var(--fg)}
+.l-title .accent{color:var(--muted-fg)}
+.l-sub{max-width:580px;margin-top:20px;color:var(--muted-fg);font-size:15.5px;line-height:1.65}
+.l-stats{display:flex;gap:34px;margin-top:34px;flex-wrap:wrap;justify-content:center}
+.l-stat .n{font-size:22px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+.l-stat .l{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted-fg);margin-top:2px}
+.l-cta{display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;justify-content:center}
+.l-foot{padding:20px;text-align:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);position:relative;z-index:2}
+.l-foot b{color:var(--fg);font-weight:600}
 
-/* ---------- SHELL ---------- */
-#app{display:none;position:relative;z-index:1}
+/* ================= APP SHELL ================= */
+#app{display:none;position:relative;z-index:2}
 #app.show{display:block}
-.sidebar{width:var(--sidebar-w);position:fixed;left:0;top:0;bottom:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50}
-.s-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
-.s-logo .n{font-size:17px;font-weight:800;letter-spacing:4px;color:var(--white)}
-.s-logo .n span{color:var(--dim)}
-.s-logo .v{font-size:9px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;margin-top:3px}
-.s-nav{flex:1;padding:14px 0;overflow-y:auto}
-.s-sec{font-size:9px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;padding:14px 20px 6px}
-.s-nav a{display:flex;align-items:center;gap:11px;padding:9px 20px;color:var(--dim);text-decoration:none;font-size:12px;letter-spacing:.8px;border-left:2px solid transparent;transition:all .12s}
-.s-nav a:hover{color:var(--ink);background:var(--bg3)}
-.s-nav a.active{color:var(--white);background:var(--bg3);border-left-color:var(--white)}
-.s-nav a .ic{width:15px;text-align:center;color:var(--dim2)}
-.s-nav a.active .ic{color:var(--white)}
-.s-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
-.s-foot .row{display:flex;align-items:center;gap:7px;margin-top:4px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.2s infinite}
-.main{margin-left:var(--sidebar-w);padding:30px 34px;min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sb-w);background:var(--sidebar);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:40;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px;border-bottom:1px solid var(--border)}
+.sb-logo .mark{width:30px;height:30px;border-radius:8px;background:var(--primary);color:var(--primary-fg);display:flex;align-items:center;justify-content:center;font-size:15px}
+.sb-logo .name{font-weight:800;letter-spacing:.12em;font-size:13px}
+.sb-nav{flex:1;overflow-y:auto;padding:14px 12px}
+.sb-group{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted-fg);padding:12px 10px 6px}
+.sb-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 12px;border-radius:10px;color:var(--muted-fg);
+  font-size:13.5px;font-weight:500;text-align:left;transition:all .13s;margin-bottom:1px}
+.sb-item:hover{color:var(--fg);background:var(--sidebar-accent)}
+.sb-item.active{color:var(--fg);background:var(--sidebar-accent);font-weight:600}
+.sb-item .ic{width:17px;display:flex;justify-content:center;flex-shrink:0}
+.sb-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted-fg)}
+.sb-foot .row{display:flex;align-items:center;gap:8px}
 
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
-.topbar h1{font-size:20px;font-weight:700;letter-spacing:2px;color:var(--white);text-transform:uppercase}
-.topbar .crumb{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
-.topbar .clock{font-size:11px;color:var(--dim);letter-spacing:1px}
+.main{margin-left:var(--sb-w);padding:26px 34px 70px;min-height:100vh;max-width:1180px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.clock{font-size:11px;letter-spacing:.1em;color:var(--muted-fg);font-family:ui-monospace,Menlo,monospace}
+.theme-btn{margin-left:12px;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:8px;border:1px solid var(--hairline);font-size:11px;color:var(--muted-fg);transition:all .15s}
+.theme-btn:hover{color:var(--fg);background:var(--sidebar-accent)}
 
 .page{display:none}
-.page.active{display:block;animation:fadein .25s}
-@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page.active{display:block}
 
-/* ---------- COMPONENTS ---------- */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
-.card{background:var(--bg2);border:1px solid var(--border);padding:18px;position:relative;overflow:hidden}
-.card::after{content:"";position:absolute;top:0;left:0;width:26px;height:1px;background:var(--dim)}
-.card .lb{font-size:9px;letter-spacing:2.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
-.card .vl{font-size:30px;font-weight:700;color:var(--white);letter-spacing:1px}
-.card .vl.red{color:var(--red)}
-.card .note{font-size:10px;color:var(--dim2);margin-top:6px}
+/* page header (skywee pattern: eyebrow + title + accent + desc) */
+.ph{margin:14px 0 26px}
+.ph h1{font-size:clamp(24px,3.4vw,32px);font-weight:800;letter-spacing:-.03em;line-height:1.12;margin-top:8px}
+.ph h1 .accent{color:var(--muted-fg)}
+.ph .desc{color:var(--muted-fg);margin-top:10px;max-width:660px;font-size:14px}
 
-.panel{background:var(--bg2);border:1px solid var(--border);margin-bottom:18px}
-.panel .hd{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.panel .hd h3{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink2);font-weight:600}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.kpi{padding:18px;border-radius:var(--radius);border:1px solid var(--border);background:var(--card)}
+.kpi .l{font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-fg)}
+.kpi .n{font-size:30px;font-weight:800;margin-top:8px;font-family:ui-monono,Menlo,monospace;letter-spacing:-.02em;font-family:ui-monospace,Menlo,monospace}
+.kpi .hint{font-size:11px;color:var(--muted-fg);margin-top:4px}
+.kpi.bad .n{color:var(--bad)}
+
+/* panels */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+.panel .hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.panel .hd h3{font-size:12.5px;font-weight:700;letter-spacing:.04em}
 .panel .bd{padding:16px 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1020px){.grid2{grid-template-columns:1fr}}
 
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{color:var(--dim);text-align:left;font-weight:400;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)}
-td{padding:9px 10px;border-bottom:1px solid var(--bg4);color:var(--ink2)}
+/* verdict rows */
+.vrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.vrow:last-child{border-bottom:none}
+.vrow .hash{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--bad);font-weight:600}
+.vrow .meta{color:var(--muted-fg);font-size:12.5px;flex:1;min-width:0}
+.vrow .right{display:flex;gap:6px;flex-shrink:0;align-items:center}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:10px;border-bottom:1px solid var(--border)}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--bg3)}
+tr:hover td{background:var(--sidebar-accent)}
 
-.badge{display:inline-block;padding:2px 9px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid}
-.b-red{color:var(--red);border-color:#4d1a1a;background:#160b0b}
-.b-green{color:var(--green);border-color:#17402a;background:#0a1710}
-.b-gray{color:var(--ink2);border-color:var(--border2);background:var(--bg4)}
-.b-amber{color:var(--amber);border-color:#4d3d14;background:#171208}
+/* output */
+.out{margin-top:12px;padding:13px 15px;border-radius:10px;border:1px solid var(--border);background:var(--muted);
+  font-family:ui-monospace,Menlo,monospace;font-size:12px;min-height:44px;white-space:pre-wrap;color:var(--muted-fg)}
+.out .ok{color:var(--ok)}.out .bad{color:var(--bad)}
 
-.v-item{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--red);padding:12px 14px;margin-bottom:10px;font-size:12px}
-.v-item .r1{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap}
-.v-item .id{color:var(--white);font-weight:700}
-.v-item .addr{color:var(--red)}
-.v-item .mt{color:var(--dim);font-size:11px}
+/* system list */
+.sys .row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--border);font-size:13px}
+.sys .row:last-child{border-bottom:none}
+.sys .k{color:var(--muted-fg)}
+.sys .v{font-weight:600}
 
-.btn{background:var(--bg3);border:1px solid var(--border2);color:var(--ink);padding:10px 22px;font:inherit;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s}
-.btn:hover{background:var(--white);color:#000;border-color:var(--white)}
-.btn:disabled{opacity:.35;cursor:wait}
-.btn.ghost{background:transparent}
-.btn.red{border-color:#4d1a1a;color:var(--red)}
-.btn.red:hover{background:var(--red);color:#000;border-color:var(--red)}
+/* toast */
+#toast{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:10px;background:var(--glass-strong);border:1px solid var(--hairline);
+  backdrop-filter:blur(12px);font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.18);animation:fade .3s}
 
-input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--border);color:var(--white);padding:10px 14px;font:inherit;font-size:12px;width:100%}
-input:focus{outline:none;border-color:var(--dim)}
-input::placeholder{color:var(--dim2)}
-
-.out{margin-top:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);font-size:12px;min-height:42px;white-space:pre-wrap}
-.out .deny{color:var(--red)}
-.out .allow{color:var(--green)}
-.ln{font-size:12px;color:var(--dim);margin:3px 0}
-.ln.ok{color:var(--green)}
-.ln.bad{color:var(--red)}
-.mono{font-family:inherit}
-.cut{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
-.flex{display:flex;gap:10px;align-items:center}
-.mt{margin-top:14px}.mb{margin-bottom:14px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media(max-width:980px){.grid2{grid-template-columns:1fr}}
-
-/* ticker */
-.ticker{border:1px solid var(--border);background:var(--bg2);padding:9px 14px;font-size:11px;color:var(--dim);overflow:hidden;white-space:nowrap;margin-bottom:22px}
-.ticker b{color:var(--ink2);font-weight:400}
+/* mobile */
+.scrim{display:none;position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.4)}
+.m-burger{display:none;position:fixed;top:16px;left:16px;z-index:60;width:40px;height:40px;border-radius:10px;
+  background:var(--glass-strong);border:1px solid var(--hairline);align-items:center;justify-content:center;font-size:17px}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .scrim.show{display:block}
+  .main{margin-left:0;padding:70px 18px 60px}
+  .l-title{font-size:clamp(34px,10vw,52px)}
+}
+@media(max-width:860px){.m-burger{display:flex}}
 </style>
 </head>
 <body>
 
+<div class="gridbg"></div>
+<div class="watermark"><span>GUARDDOG</span></div>
+<div class="grain"></div>
+
 <!-- ============ LANDING ============ -->
 <div id="landing">
-  <div class="l-box">
-    <div class="l-eyebrow">SENTINEL // LEASH // CHAIN SIGNATURES</div>
-    <div class="l-title">GUARD<span class="hollow">DOG</span></div>
-    <div class="l-sub">THE IMMUNE SYSTEM FOR AI AGENTS THAT HOLD MONEY</div>
-    <div class="l-line"></div>
-    <div class="l-status">
-      <span>NEAR <b id="l-near">····</b></span>
-      <span>VERDICTS <b id="l-verd">··</b></span>
-      <span>BASE SEPOLIA <b>LIVE</b></span>
+  <header class="l-head">
+    <div class="l-logo"><div class="mark">🐕</div><span class="name">GUARDDOG</span></div>
+    <a class="l-github" href="https://github.com/Zerxxz/GUARDDOG-" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.35.95.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.08 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.68.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+      <span>GitHub</span></a>
+  </header>
+
+  <main class="l-main">
+    <div class="l-pill rise" style="animation-delay:.02s"><span class="dot"></span> NEAR Testnet · Live</div>
+    <h1 class="l-title rise" style="animation-delay:.08s">Every agent holds money.<br><span class="accent">Ours learns who to bite.</span></h1>
+    <p class="l-sub rise" style="animation-delay:.14s">GUARDDOG is the immune system for AI agents that hold money — honeypot decoys catch rogue agents, verdicts land on-chain via NEAR Chain Signatures, and the Leash firewall denies hostile transactions before a signature ever exists.</p>
+    <div class="l-stats rise" style="animation-delay:.2s">
+      <div class="l-stat"><div class="n" id="l-verdicts">—</div><div class="l">verdicts on-chain</div></div>
+      <div class="l-stat"><div class="n" id="l-blocked">—</div><div class="l">addresses blocked</div></div>
+      <div class="l-stat"><div class="n" id="l-decoys">—</div><div class="l">decoys armed</div></div>
+      <div class="l-stat"><div class="n">8</div><div class="l">MPC nodes</div></div>
     </div>
-    <button class="enter" onclick="enterApp()">ENTER OPS<span class="blink">_</span></button>
-  </div>
-  <div class="l-foot">NEAR HACKATHON 2026 · TESTNET · NOTHING ON THIS SCREEN IS MOCKED</div>
+    <div class="l-cta rise" style="animation-delay:.26s">
+      <button class="btn" onclick="enterApp()">Enter Ops <span style="font-weight:400">→</span></button>
+      <a class="btn ghost" href="https://github.com/Zerxxz/GUARDDOG-" target="_blank" rel="noopener" style="display:inline-flex;align-items:center">View the repo</a>
+    </div>
+  </main>
+
+  <div class="l-foot">NEAR HACKATHON 2026 · <b>every number on this screen is read live from chain</b> · nothing mocked</div>
 </div>
 
-<!-- ============ APP SHELL ============ -->
+<!-- ============ APP ============ -->
 <div id="app">
-  <aside class="sidebar">
-    <div class="s-logo">
-      <div class="n">GUARD<span>DOG</span></div>
-      <div class="v">cyber-ops console</div>
-    </div>
-    <nav class="s-nav">
-      <div class="s-sec">Overview</div>
-      <a href="#dashboard" data-page="dashboard" class="active"><span class="ic">◉</span>Dashboard</a>
-      <a href="#threats" data-page="threats"><span class="ic">▲</span>Threat Feed</a>
-      <a href="#decoys" data-page="decoys"><span class="ic">◈</span>Decoys</a>
-      <div class="s-sec">Defense</div>
-      <a href="#leash" data-page="leash"><span class="ic">⛓</span>Leash Check</a>
-      <div class="s-sec">Operations</div>
-      <a href="#actions" data-page="actions"><span class="ic">⚡</span>Actions</a>
+  <button class="m-burger" onclick="toggleSidebar()">☰</button>
+  <div class="scrim" id="scrim" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo"><div class="mark">🐕</div><span class="name">GUARDDOG</span></div>
+    <nav class="sb-nav">
+      <div class="sb-group">Overview</div>
+      <button class="sb-item active" data-page="dashboard" onclick="go('dashboard')"><span class="ic">◉</span>Dashboard</button>
+      <button class="sb-item" data-page="threats" onclick="go('threats')"><span class="ic">▲</span>Threat Feed</button>
+      <button class="sb-item" data-page="decoys" onclick="go('decoys')"><span class="ic">◈</span>Decoys</button>
+      <div class="sb-group">Defense</div>
+      <button class="sb-item" data-page="leash" onclick="go('leash')"><span class="ic">⛓</span>Leash Check</button>
+      <div class="sb-group">Operations</div>
+      <button class="sb-item" data-page="actions" onclick="go('actions')"><span class="ic">⚡</span>Actions</button>
+      <div class="sb-group">Resources</div>
+      <button class="sb-item" onclick="window.open('https://github.com/Zerxxz/GUARDDOG-','_blank')"><span class="ic">⌥</span>GitHub Repo</button>
     </nav>
-    <div class="s-foot">
-      registry: guarddog-sentinel.testnet
-      <div class="row"><span class="dot"></span>testnet live · sync 15s</div>
+    <div class="sb-foot">
+      <div class="row"><span class="dot"></span><span>testnet live · sync 15s</span></div>
+      <div class="row mono" style="margin-top:6px;font-size:10px;opacity:.7">registry: guarddog-sentinel.testnet</div>
     </div>
   </aside>
 
   <div class="main">
     <div class="topbar">
-      <div>
-        <div class="crumb" id="crumb">overview / dashboard</div>
-        <h1 id="ptitle">Dashboard</h1>
+      <div class="eyebrow" id="crumb">overview / dashboard</div>
+      <div style="display:flex;align-items:center">
+        <span class="clock" id="clock">--:--:-- UTC</span>
+        <button class="theme-btn" onclick="toggleTheme()" title="toggle theme (t)"><span id="theme-ic">◐</span></button>
       </div>
-      <div class="clock" id="clock">--:--:--</div>
     </div>
 
     <!-- DASHBOARD -->
-    <div class="page active" id="pg-dashboard">
-      <div class="ticker" id="ticker">booting feed…</div>
-      <div class="cards">
-        <div class="card"><div class="lb">Verdicts on-chain</div><div class="vl" id="k-total">–</div><div class="note">NEAR registry</div></div>
-        <div class="card"><div class="lb">Addresses blocked</div><div class="vl red" id="k-blocked">–</div><div class="note">leash deny list</div></div>
-        <div class="card"><div class="lb">Decoys live</div><div class="vl" id="k-decoys">–</div><div class="note">base sepolia</div></div>
-        <div class="card"><div class="lb">Captures logged</div><div class="vl" id="k-captures">–</div><div class="note">trap listener</div></div>
+    <section class="page active" id="pg-dashboard">
+      <div class="ph">
+        <h1>The agent immune system,<br><span class="accent">at a glance.</span></h1>
+        <p class="desc">Every verdict, decoy and denial below corresponds to a real interaction on Base Sepolia and the NEAR testnet registry — honeypot evidence, MPC-signed integrity, enforcement at the signature layer.</p>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Verdicts on-chain</div><div class="n" id="k-total">—</div><div class="hint">NEAR registry</div></div>
+        <div class="kpi bad"><div class="l">Addresses blocked</div><div class="n" id="k-blocked">—</div><div class="hint">leash deny list</div></div>
+        <div class="kpi"><div class="l">Decoys armed</div><div class="n" id="k-decoys">—</div><div class="hint">Base Sepolia</div></div>
+        <div class="kpi"><div class="l">Captures logged</div><div class="n" id="k-captures">—</div><div class="hint">trap listener</div></div>
       </div>
       <div class="grid2">
         <div class="panel">
-          <div class="hd"><h3>Latest verdicts</h3><a href="#threats" class="ln" style="font-size:10px">view all →</a></div>
-          <div class="bd" id="dash-feed"><div class="ln">loading…</div></div>
+          <div class="hd"><h3>Latest verdicts</h3><button class="btn ghost" style="padding:5px 12px;font-size:11px" onclick="go('threats')">View all →</button></div>
+          <div class="bd" id="dash-feed"><span style="color:var(--muted-fg)">loading…</span></div>
         </div>
-        <div class="panel">
-          <div class="hd"><h3>System</h3></div>
-          <div class="bd" id="sys-panel">
-            <div class="ln">sentinel trap .......... <span style="color:var(--green)">ARMED</span></div>
-            <div class="ln">registry contract ...... <span style="color:var(--green)">DEPLOYED</span></div>
-            <div class="ln">mpc network ............ <span style="color:var(--green)">8 NODES</span></div>
-            <div class="ln">last publish (ns) ...... <span id="k-last" style="color:var(--white)">–</span></div>
-            <div class="ln">leash engine ........... <span style="color:var(--green)">ACTIVE</span></div>
+        <div class="panel sys">
+          <div class="hd"><h3>System</h3><span class="badge ok"><span class="dot"></span>operational</span></div>
+          <div class="bd">
+            <div class="row"><span class="k">sentinel trap</span><span class="v" style="color:var(--ok)">ARMED</span></div>
+            <div class="row"><span class="k">registry contract</span><span class="v" style="color:var(--ok)">DEPLOYED</span></div>
+            <div class="row"><span class="k">MPC network</span><span class="v">8 NODES</span></div>
+            <div class="row"><span class="k">leash engine</span><span class="v" style="color:var(--ok)">ACTIVE</span></div>
+            <div class="row"><span class="k">last publish</span><span class="v mono" id="k-last" style="font-size:11px">—</span></div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- THREATS -->
-    <div class="page" id="pg-threats">
-      <div class="panel">
-        <div class="hd"><h3>Verdict feed — sentinel registry</h3><span class="badge b-gray" id="th-count">0 entries</span></div>
-        <div class="bd" id="threat-list"><div class="ln">loading…</div></div>
+    <section class="page" id="pg-threats">
+      <div class="ph">
+        <h1>Threat feed —<br><span class="accent">first-party evidence.</span></h1>
+        <p class="desc">Verdicts published to the Sentinel Registry. Each one is anchored to a capture our own honeypots observed: attacker address, selector, pattern hash and the evidence transaction.</p>
       </div>
-    </div>
+      <div class="panel">
+        <div class="hd"><h3>Sentinel Registry — verdicts</h3><span class="badge ghost" id="th-count">—</span></div>
+        <div class="bd" id="threat-list"><span style="color:var(--muted-fg)">loading…</span></div>
+      </div>
+    </section>
 
     <!-- DECOYS -->
-    <div class="page" id="pg-decoys">
+    <section class="page" id="pg-decoys">
+      <div class="ph">
+        <h1>Decoys —<br><span class="accent">drainer catnip.</span></h1>
+        <p class="desc">Bait wallets living on Base Sepolia with real balances and a loose-approval token. Rogue agents that touch them get fingerprinted and end up in the threat feed.</p>
+      </div>
       <div class="panel">
-        <div class="hd"><h3>Bait wallets — base sepolia</h3><span class="badge b-green">armed</span></div>
-        <div class="bd">
-          <table>
-            <thead><tr><th>Label</th><th>Address</th><th>Balance</th><th>Status</th></tr></thead>
-            <tbody id="decoy-table"><tr><td colspan="4">loading…</td></tr></tbody>
-          </table>
+        <div class="hd"><h3>Armed bait wallets</h3><span class="badge ok"><span class="dot"></span>armed</span></div>
+        <div class="bd" style="padding:0">
+          <table><thead><tr><th>Label</th><th>Address</th><th>Balance</th><th>Status</th></tr></thead>
+          <tbody id="decoy-table"><tr><td colspan="4">loading…</td></tr></tbody></table>
         </div>
       </div>
-      <div class="ln">Balances are read live from Base Sepolia. These wallets carry bait funds and a loose-approval token — drainer catnip.</div>
-    </div>
+    </section>
 
     <!-- LEASH -->
-    <div class="page" id="pg-leash">
+    <section class="page" id="pg-leash">
+      <div class="ph">
+        <h1>Leash —<br><span class="accent">deny means never signed.</span></h1>
+        <p class="desc">The pre-sign firewall. Check any address against the live policy engine: on-chain blocklist, per-tx cap, daily cap, velocity and cooldown. A denied transaction is never signed — it never exists.</p>
+      </div>
       <div class="grid2">
         <div class="panel">
-          <div class="hd"><h3>Pre-sign policy check</h3></div>
+          <div class="hd"><h3>Policy check</h3></div>
           <div class="bd">
-            <div class="ln mb">Any address → instant allow/deny from the real policy engine (blocklist from the on-chain registry + caps + velocity + cooldown).</div>
-            <div class="mb"><input type="text" id="lc-addr" placeholder="0x… address to check" spellcheck="false"></div>
-            <div class="flex mb">
-              <input type="number" id="lc-val" step="0.0001" value="0.001" style="max-width:130px">
+            <input type="text" id="lc-addr" placeholder="0x… address to check" spellcheck="false" style="margin-bottom:12px">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <input type="number" id="lc-val" step="0.0001" value="0.001" style="max-width:140px">
               <button class="btn" id="lc-btn">Run check</button>
             </div>
-            <div class="out" id="lc-out"><span class="ln">awaiting input…</span></div>
+            <div class="out" id="lc-out">awaiting input…</div>
           </div>
         </div>
         <div class="panel">
-          <div class="hd"><h3>How Leash works</h3></div>
-          <div class="bd">
-            <div class="ln">1. agent forms an intent (to, value)</div>
-            <div class="ln">2. leash checks registry blocklist + policy</div>
-            <div class="ln">3. deny → <span style="color:var(--red)">no signature is ever produced</span></div>
-            <div class="ln">4. allow → signed via NEAR Chain Signatures</div>
-            <div class="ln mt">A denied transaction doesn't fail on-chain. It never exists. Prompt injection can't bypass a key the model never holds.</div>
+          <div class="hd"><h3>How enforcement works</h3></div>
+          <div class="bd" style="font-size:13px;color:var(--muted-fg);line-height:1.95">
+            <div><b style="color:var(--fg)">1.</b> agent forms an intent — to, value, chain</div>
+            <div><b style="color:var(--fg)">2.</b> leash checks the registry blocklist + policy</div>
+            <div><b style="color:var(--fg)">3.</b> <span style="color:var(--bad)">deny → no signature is ever produced</span></div>
+            <div><b style="color:var(--fg)">4.</b> allow → signed via NEAR Chain Signatures</div>
+            <div style="margin-top:10px">Prompt injection can't bypass a key the model never holds.</div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- ACTIONS -->
-    <div class="page" id="pg-actions">
+    <section class="page" id="pg-actions">
+      <div class="ph">
+        <h1>Actions —<br><span class="accent">run the real thing.</span></h1>
+        <p class="desc">Everything here executes against live testnets: the strike pipeline mints a fresh attacker on Base Sepolia and walks it into the registry; the MPC request asks the 8-node network for a real signature.</p>
+      </div>
       <div class="grid2">
         <div class="panel">
-          <div class="hd"><h3>Attack pipeline — live</h3></div>
+          <div class="hd"><h3>Strike pipeline</h3><span class="badge bad">live fire</span></div>
           <div class="bd">
-            <div class="ln mb">strike → capture → verdict on-chain → blocklist. every step is a real testnet transaction.</div>
-            <button class="btn red" id="strike-btn">⚡ Simulate strike</button>
-            <div class="out" id="strike-out"><span class="ln">idle</span></div>
+            <p style="color:var(--muted-fg);font-size:13px;margin-bottom:14px">strike → capture → verdict on-chain → blocklist. Each step is a real testnet transaction.</p>
+            <button class="btn danger" id="strike-btn">⚡ Simulate strike</button>
+            <div class="out" id="strike-out">idle</div>
           </div>
         </div>
         <div class="panel">
-          <div class="hd"><h3>Chain signatures (MPC)</h3></div>
+          <div class="hd"><h3>Chain Signatures</h3><span class="badge ghost">MPC · 8 nodes</span></div>
           <div class="bd">
-            <div class="ln mb">request a real signature from the 8-node NEAR MPC network over a fresh payload (~15–90s).</div>
-            <button class="btn ghost" id="mpc-btn">🔑 Request MPC signature</button>
-            <div class="out" id="mpc-out"><span class="ln">idle</span></div>
+            <p style="color:var(--muted-fg);font-size:13px;margin-bottom:14px">Request a real signature over a fresh 32-byte payload. Takes ~15–90s on the public network.</p>
+            <button class="btn ghost" id="mpc-btn">Request MPC signature</button>
+            <div class="out" id="mpc-out">idle</div>
           </div>
         </div>
       </div>
-    </div>
-
+    </section>
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const $=s=>document.querySelector(s);
 const cut=s=>s?`<span class="cut" title="${s}">${s.slice(0,12)}…${s.slice(-6)}</span>`:'—';
 let entered=false;
+
+/* ---------- navigation ---------- */
+const CRUMBS={dashboard:'overview / dashboard',threats:'overview / threat feed',decoys:'overview / decoys',leash:'defense / leash check',actions:'operations / actions'};
+function go(page){
+  document.querySelectorAll('.sb-item[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=$('#pg-'+page);
+  el.classList.add('active');
+  el.classList.remove('fade'); void el.offsetWidth; el.classList.add('fade');
+  $('#crumb').textContent=CRUMBS[page];
+  history.replaceState(null,'','#'+page);
+  closeSidebar(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function routeFromHash(){
+  const p=(location.hash||'#dashboard').slice(1);
+  if(CRUMBS[p]){ go(p); if(!entered) enterApp(); }
+}
+window.addEventListener('hashchange',routeFromHash);
 
 function enterApp(){
   if(entered)return; entered=true;
   $('#landing').classList.add('hide');
   $('#app').classList.add('show');
 }
+function toggleSidebar(){ $('#sidebar').classList.toggle('open'); $('#scrim').classList.toggle('show'); }
+function closeSidebar(){ $('#sidebar').classList.remove('open'); $('#scrim').classList.remove('show'); }
 
-/* routing */
-const TITLES={dashboard:'Dashboard',threats:'Threat Feed',decoys:'Decoys',leash:'Leash Check',actions:'Actions'};
-const CRUMBS={dashboard:'overview / dashboard',threats:'overview / threat feed',decoys:'overview / decoys',leash:'defense / leash check',actions:'operations / actions'};
-function route(){
-  let p=(location.hash||'#dashboard').slice(1);
-  if(!TITLES[p])p='dashboard';
-  if(location.hash)enterApp();
-  $$('.s-nav a').forEach(a=>a.classList.toggle('active',a.dataset.page===p));
-  $$('.page').forEach(x=>x.classList.remove('active'));
-  $('#pg-'+p).classList.add('active');
-  $('#ptitle').textContent=TITLES[p];
-  $('#crumb').textContent=CRUMBS[p];
+/* ---------- theme ---------- */
+function setTheme(dark){
+  document.documentElement.classList.toggle('dark',dark);
+  $('#theme-ic').textContent=dark?'◑':'◐';
+  try{localStorage.setItem('gd-theme',dark?'dark':'light')}catch(e){}
 }
-window.addEventListener('hashchange',route);
+function toggleTheme(){ setTheme(!document.documentElement.classList.contains('dark')); }
+(function(){
+  let pref=null; try{pref=localStorage.getItem('gd-theme')}catch(e){}
+  if(pref==='dark') setTheme(true);
+})();
+document.addEventListener('keydown',e=>{ if((e.key==='t'||e.key==='T')&&e.target.tagName!=='INPUT') toggleTheme(); });
 
-/* clock */
-setInterval(()=>{const d=new Date();$('#clock').textContent=d.toISOString().replace('T',' ').slice(0,19)+' UTC';},1000);
+/* ---------- clock ---------- */
+setInterval(()=>{ $('#clock').textContent=new Date().toISOString().replace('T',' ').slice(0,19)+' UTC'; },1000);
 
-/* data */
+/* ---------- toast ---------- */
+function toast(msg,ms=3400){
+  const t=document.createElement('div'); t.className='toast'; t.innerHTML=msg;
+  $('#toast').appendChild(t); setTimeout(()=>t.remove(),ms);
+}
+
+/* ---------- data ---------- */
 async function refresh(){
   try{
-    const r=await fetch('/api/state');const d=await r.json();
-    const total=d.stats?.total??'–', blocked=d.stats?.blocked??'–';
-    $('#k-total').textContent=total;
-    $('#k-blocked').textContent=blocked;
-    $('#k-decoys').textContent=d.decoys?.length??'–';
-    $('#k-captures').textContent=(d.captures?.length??0);
-    $('#k-last').textContent=d.stats?.last_publish?String(d.stats.last_publish).slice(-10):'–';
-    $('#l-near').textContent='LIVE'; $('#l-verd').textContent=String(total).padStart(2,'0');
-    $('#ticker').innerHTML=`<b>FEED</b> · ${total} verdicts on-chain · ${blocked} addresses blocked · ${d.decoys?.length??0} decoys armed · last publish ${d.stats?.last_publish?String(d.stats.last_publish).slice(-10):'—'} · <span class="blink">▮</span>`;
+    const r=await fetch('/api/state'); const d=await r.json();
+    const total=d.stats?.total??'—', blocked=d.stats?.blocked??'—';
+    $('#k-total').textContent=total; $('#k-blocked').textContent=blocked;
+    $('#k-decoys').textContent=d.decoys?.length??'—';
+    $('#k-captures').textContent=d.captures?.length??0;
+    $('#k-last').textContent=d.stats?.last_publish?String(d.stats.last_publish).slice(-10):'—';
+    $('#l-verdicts').textContent=total; $('#l-blocked').textContent=blocked; $('#l-decoys').textContent=d.decoys?.length??'—';
 
-    /* dash feed */
-    $('#dash-feed').innerHTML=(d.verdicts||[]).slice(0,3).map(v=>`
-      <div class="v-item">
-        <div class="r1"><span class="id">${v.id}</span><span class="badge b-gray">${v.chain}</span></div>
-        <div class="addr">${cut(v.attacker)}</div>
-        <div class="mt">confidence ${v.confidence}% · evidence ${cut(v.evidence_tx)}</div>
-      </div>`).join('')||'<div class="ln">no verdicts yet — run a strike</div>';
-
-    /* threats page */
     const vs=d.verdicts||[];
+    $('#dash-feed').innerHTML=vs.slice(0,5).map(v=>`
+      <div class="vrow">
+        <span class="hash">${cut(v.attacker)}</span>
+        <span class="meta">${v.id} · ${v.chain} · conf ${v.confidence}%</span>
+        <span class="right"><span class="badge bad">blocked</span></span>
+      </div>`).join('')||'<span style="color:var(--muted-fg)">no verdicts yet — run a strike</span>';
+
     $('#th-count').textContent=vs.length+' entries';
     $('#threat-list').innerHTML=vs.map(v=>`
-      <div class="v-item">
-        <div class="r1"><span class="id">${v.id}</span><span class="badge b-red">${v.chain}</span><span class="badge b-amber">conf ${v.confidence}%</span></div>
-        <div class="addr">attacker ${cut(v.attacker)}</div>
-        <div class="mt">selector ${v.selector||'—'} · pattern ${v.pattern_hash||'—'} · evidence ${cut(v.evidence_tx)}</div>
-      </div>`).join('')||'<div class="ln">feed empty</div>';
+      <div class="vrow">
+        <span class="hash">${cut(v.attacker)}</span>
+        <span class="meta">selector <span class="mono">${v.selector||'—'}</span> · evidence <span class="mono">${cut(v.evidence_tx)}</span></span>
+        <span class="right"><span class="badge bad">${v.chain}</span><span class="badge ghost">conf ${v.confidence}%</span></span>
+      </div>`).join('')||'<span style="color:var(--muted-fg)">feed empty</span>';
 
-    /* decoys */
     $('#decoy-table').innerHTML=(d.decoys||[]).map(x=>`
-      <tr><td>${x.label}</td><td class="mono">${cut(x.address)}</td><td style="color:var(--white)">${x.eth.toFixed(6)} ETH</td><td><span class="badge b-green">armed</span></td></tr>`).join('')
+      <tr><td style="font-weight:600">${x.label}</td><td class="mono" style="font-size:12px">${cut(x.address)}</td>
+      <td class="mono">${x.eth.toFixed(6)} ETH</td><td><span class="badge ok"><span class="dot"></span>armed</span></td></tr>`).join('')
       ||'<tr><td colspan="4">loading…</td></tr>';
-  }catch(e){console.error(e);}
+  }catch(e){ console.error(e); }
 }
 
-/* leash check */
+/* ---------- leash ---------- */
 $('#lc-btn').onclick=async()=>{
   const addr=$('#lc-addr').value.trim(); if(!addr)return;
   $('#lc-btn').disabled=true;
-  $('#lc-out').innerHTML='<span class="ln">querying policy engine…</span>';
+  $('#lc-out').textContent='querying policy engine…';
   try{
     const r=await fetch('/api/leash_check',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({addr,chain:'base-sepolia',value_eth:parseFloat($('#lc-val').value)||0.001})});
     const d=await r.json();
-    $('#lc-out').innerHTML=d.allowed
-      ?`<span class="allow">✓ ALLOW</span> <span class="ln">— ${d.reason}</span>`
-      :`<span class="deny">✗ DENY [${d.rule}]</span> <span class="ln">— ${d.reason}</span><br><span class="ln">→ transaction never signed. it does not exist.</span>`;
-  }catch(e){$('#lc-out').innerHTML=`<span class="deny">error: ${e}</span>`;}
+    if(d.allowed){
+      $('#lc-out').innerHTML=`<span class="ok">✓ ALLOW</span> — ${d.reason}`;
+      toast('✓ <b>ALLOW</b> — all checks passed');
+    }else{
+      $('#lc-out').innerHTML=`<span class="bad">✗ DENY [${d.rule}]</span> — ${d.reason}\n→ transaction never signed. it does not exist.`;
+      toast(`✗ <b>DENY [${d.rule}]</b>`);
+    }
+  }catch(e){ $('#lc-out').textContent='error: '+e; }
   $('#lc-btn').disabled=false;
 };
 
-/* strike */
+/* ---------- strike ---------- */
 $('#strike-btn').onclick=async()=>{
   const btn=$('#strike-btn'),box=$('#strike-out');
-  btn.disabled=true;box.innerHTML='<span class="ln">running real pipeline on testnet…</span>';
+  btn.disabled=true; box.textContent='running the real pipeline on testnet…';
   try{
-    const r=await fetch('/api/strike',{method:'POST'});const d=await r.json();
-    box.innerHTML=d.steps.map(s=>`<div class="ln ${s.ok?'ok':'bad'}">${s.ok?'✓':'✗'} <b>${s.step}</b> — ${s.detail}</div>`).join('')
-      +(d.near_tx?`<div class="ln mt">near tx: ${d.near_tx}</div>`:'')
-      +(d.capture?.tx_hash?`<div class="ln">evidence: ${d.capture.tx_hash}</div>`:'')
-      +(d.leash?`<div class="ln ${d.leash.allowed?'ok':'bad'}">leash: ${d.leash.allowed?'ALLOW':'DENY ['+d.leash.rule+']'} — ${d.leash.reason}</div>`:'');
+    const r=await fetch('/api/strike',{method:'POST'}); const d=await r.json();
+    box.innerHTML=d.steps.map(s=>`<span class="${s.ok?'ok':'bad'}">${s.ok?'✓':'✗'} ${s.step}</span> — ${s.detail}`).join('\n')
+      +(d.near_tx?`\n<span style="opacity:.7">near tx: ${d.near_tx}</span>`:'');
+    toast(`⚡ strike complete — verdict <b>${d.verdict?.id||''}</b> on-chain`);
     refresh();
-  }catch(e){box.innerHTML=`<div class="ln bad">error: ${e}</div>`;}
+  }catch(e){ box.innerHTML=`<span class="bad">error: ${e}</span>`; }
   btn.disabled=false;
 };
 
-/* mpc */
+/* ---------- mpc ---------- */
 $('#mpc-btn').onclick=async()=>{
   const btn=$('#mpc-btn'),box=$('#mpc-out');
-  btn.disabled=true;box.innerHTML='<span class="ln">requesting signature from the 8-node MPC network… (~15–90s)</span>';
+  btn.disabled=true; box.textContent='asking the 8-node MPC network… (~15–90s)';
   try{
-    const r=await fetch('/api/mpc_sign',{method:'POST'});const d=await r.json();
-    const big=typeof d.big_r==='object'?d.big_r.affine_point:d.big_r;
-    const s=typeof d.s==='object'?d.s.scalar:d.s;
+    const r=await fetch('/api/mpc_sign',{method:'POST'}); const d=await r.json();
+    const big=typeof d.big_r==='object'?d.big_r?.affine_point:d.big_r;
+    const s=typeof d.s==='object'?d.s?.scalar:d.s;
     box.innerHTML=d.ok
-      ?`<div class="ln ok">✓ signature received in ${d.seconds}s — signed by NEAR Chain Signatures</div>
-        <div class="ln">big_r: ${String(big).slice(0,30)}…</div>
-        <div class="ln">s: ${String(s).slice(0,30)}… · recovery_id: ${d.recovery_id}</div>
-        <div class="ln">request tx: ${d.request_tx}</div>`
-      :`<div class="ln bad">✗ ${d.error}</div>`;
-  }catch(e){box.innerHTML=`<div class="ln bad">error: ${e}</div>`;}
+      ? `<span class="ok">✓ signature in ${d.seconds}s</span> — signed by NEAR Chain Signatures\nbig_r: ${String(big).slice(0,34)}…\ns: ${String(s).slice(0,34)}…  recovery_id: ${d.recovery_id}\n<span style="opacity:.7">tx: ${d.request_tx}</span>`
+      : `<span class="bad">✗ ${d.error}</span>`;
+    if(d.ok) toast(`🔑 MPC signature in <b>${d.seconds}s</b>`);
+  }catch(e){ box.textContent='error: '+e; }
   btn.disabled=false;
 };
 
-/* boot */
-route(); refresh(); setInterval(refresh,15000);
+/* ---------- boot ---------- */
+routeFromHash(); refresh(); setInterval(refresh,15000);
 const urlAddr=new URLSearchParams(location.search).get('check');
-if(urlAddr){enterApp();location.hash='leash';route();$('#lc-addr').value=urlAddr;setTimeout(()=>$('#lc-btn').click(),700);}
+if(urlAddr){ enterApp(); location.hash='leash'; routeFromHash(); $('#lc-addr').value=urlAddr; setTimeout(()=>$('#lc-btn').click(),700); }
 </script>
 </body>
 </html>
