@@ -115,6 +115,15 @@ class Guard:
         """Run every rule; return the first denial or an allow."""
         now = time.time() if now is None else now
 
+        # malformed intent: negative value is nonsensical (or an attempt to
+        # exploit accounting); empty recipient burns funds — both denied outright
+        if value_eth < 0:
+            self.last_denial_ts = now
+            return Decision(False, "negative value in intent", "malformed_intent")
+        if not (to or "").strip():
+            self.last_denial_ts = now
+            return Decision(False, "empty recipient", "malformed_intent")
+
         # cooldown: after an anomaly, nothing moves for cooldown_s
         if self.last_denial_ts is not None and now - self.last_denial_ts < self.cooldown_s:
             return Decision(False, "cooldown after anomaly", "cooldown")

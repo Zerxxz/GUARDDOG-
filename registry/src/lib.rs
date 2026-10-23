@@ -16,7 +16,9 @@
 
 use k256::elliptic_curve::ops::Reduce;
 use k256::elliptic_curve::point::AffineCoordinates;
-use k256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
+use k256::elliptic_curve::sec1::FromEncodedPoint;
+#[cfg(test)]
+use k256::elliptic_curve::sec1::ToEncodedPoint;
 use k256::elliptic_curve::{CurveArithmetic, PrimeField};
 use k256::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar, Secp256k1};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
@@ -635,8 +637,9 @@ mod tests {
 
     fn affine_to_near_str(p: &AffinePoint) -> String {
         // "secp256k1:" + base58(64-byte x||y)
-        let ep = p.to_encoded_point(false);
-        format!("secp256k1:{}", b58_encode(&ep.as_bytes()[1..65]))
+        // (test helper: raw x||y without the 0x04 SEC1 tag, matching near's key format)
+        let coords = p.to_encoded_point(false);
+        format!("secp256k1:{}", b58_encode(&coords.as_bytes()[1..65]))
     }
 
     fn b58_encode(bytes: &[u8]) -> String {

@@ -37,11 +37,20 @@ def _chunked_logs(w3: Web3, token: str, from_b: int, to_b: int, topics: list) ->
     return logs
 
 
+MAX_BACKFILL_BLOCKS = 500
+
+
 def _scan_token_logs(w3: Web3, state, last_block: int, decoys: set[str], token: str) -> tuple[int, int]:
-    """Returns (new_captures, latest_block_scanned)."""
+    """Returns (new_captures, latest_block_scanned).
+
+    Backfill is capped at MAX_BACKFILL_BLOCKS: after a long downtime a public
+    RPC log scan over a huge range would hang for hours, and the captures we
+    care about are fresh contact events anyway."""
     latest = w3.eth.block_number
     if latest <= last_block:
         return 0, last_block
+    if latest - last_block > MAX_BACKFILL_BLOCKS:
+        last_block = latest - MAX_BACKFILL_BLOCKS
     approval_topic = "0x" + Web3.keccak(text="Approval(address,address,uint256)").hex()
     transfer_topic = "0x" + Web3.keccak(text="Transfer(address,address,uint256)").hex()
     logs = _chunked_logs(w3, token, last_block + 1, latest, [[approval_topic, transfer_topic]])
