@@ -12,3 +12,6 @@ node_modules/
 keys/
 registry/target/
 decoys/*.key.json
+decoys/
+demo/video/raw*.mp4
+demo/video/nar/

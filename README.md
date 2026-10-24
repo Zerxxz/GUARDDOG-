@@ -112,6 +112,30 @@ EVM transactions.
   so a compromised agent cannot exfiltrate it.
 - Contract: `registry/src/lib.rs` (near-sdk 5.29.1, 17 unit tests).
 
+## Demo video
+
+`demo/video/final_v3.mp4` — 96s, 1600×900, real screen recording (Xvfb + Chrome +
+`x11grab`, system cursor visible) with ElevenLabs narration burned in at the exact
+timestamp of each on-screen action.
+
+Rebuild it:
+
+```bash
+# 1. record the live UI (clicks + typing go through CDP Input API → pixel-exact)
+venv/bin/python demo/record_live5.py        # → demo/video/raw5.mp4
+
+# 2. generate the per-scene narration (needs a key, never committed)
+export ELEVENLABS_API_KEY=...               # ElevenLabs key
+venv/bin/python demo/narrate_segments.py    # → demo/video/nar/seg*.mp3
+
+# 3. cut it together (captions, title/outro cards, drift motion, audio mix)
+venv/bin/python demo/build_final3.py        # → demo/video/final_v3.mp4
+```
+
+What the recording actually shows (all verified live, not staged):
+`✗ DENY [blocklist]` for a blocklisted attacker → `✓ ALLOW` for a clean address
+→ `✓ signature in 14.1s — signed by NEAR Chain Signatures`.
+
 ## Honest limitations
 
 - The demo attacker is **simulated** (`demo/strike.py`) — the capture pipeline

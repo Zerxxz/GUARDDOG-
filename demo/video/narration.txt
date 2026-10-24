@@ -1,13 +1,13 @@
 Every AI agent that holds money is a target. Guarddog is the immune system that learns from real attackers. Here is how it works, live, on testnet.
 
-Sentinel deploys bait wallets on Base Sepolia. Decoys with real balances and loose token approvals. When a drainer strikes one, the trap captures the contact on chain, and fingerprints it. Selector, pattern, and confidence.
+Sentinel deploys bait wallets on Base Sepolia. Decoys with real balances and loose token approvals. When a drainer strikes, the trap captures the contact on chain, and fingerprints it.
 
-The verdict is published to a NEAR smart contract. First party evidence, not a static blacklist. Anyone can verify it on chain.
+The verdict is published to a NEAR smart contract. First-party evidence, not a static blacklist. Anyone can verify it on chain.
 
-Then comes Leash. The firewall at the signing layer. The attacker's address is now on the blocklist. Any agent trying to send funds there is denied, before a signature ever exists. A denied transaction doesn't fail on chain. It never exists.
+Then comes Leash, the firewall at the signing layer. Watch: the attacker's address is now on the blocklist. Any agent sending funds there is denied, before a signature ever exists. A denied transaction doesn't fail on chain. It never exists.
 
-Healthy agents just flow. Same policy, same engine. Security without breaking the good ones.
+Healthy agents just flow. Same policy, same engine.
 
-And signing itself goes through NEAR Chain Signatures. An eight node MPC network produces the signature. The private key never leaves the network, so there is nothing for prompt injection to steal.
+And signing goes through NEAR Chain Signatures. An eight-node MPC network produces the signature, so there is nothing for prompt injection to steal.
 
-Guarddog. Learned from real attackers. Enforced where it cannot be bypassed. Built for the NEAR Hackathon.
+Guarddog. Learned from real attackers. Enforced where it can't be bypassed. Built for the NEAR Hackathon.
